@@ -12,7 +12,7 @@ The source archive is attached to [upstream proposal #272](https://github.com/ch
 
 ## Status
 
-Experimental prototype, not an installer or a stable VR release. Nine portable test suites were reported passing, including 20,000 simulated input samples. Full Windows compilation, upstream integration and physical Quest 3 testing remain outstanding. Independent 3D weapon/tool manipulation and direct terminal interactions are not implemented.
+Experimental prototype, not an installer or a stable VR release. Nine portable test suites were reported passing, including 20,000 simulated input samples. The standalone Windows x64 module and diagnostic viewer compiled successfully in [Windows CI](https://github.com/philippe015/ed-up-vr-controllers/actions/runs/45779308991). A separate [integrated proof build](https://github.com/philippe015/ed-up-vr-controllers/actions/workflows/integrated-windows.yml) now applies the experimental patch to a pinned upstream revision (`ba1de96c84fab3a6dde3f915d4a7fc9bb40adff1`) and checks the complete native build. That gate and physical Quest 3 testing remain unvalidated. No stable release or installer is available. Independent 3D weapon/tool manipulation and direct terminal interactions are not implemented.
 
 MIT-licensed source contribution. Technical feedback and collaboration are welcome. This is an unofficial contribution, not an official Frontier Developments project.
 
