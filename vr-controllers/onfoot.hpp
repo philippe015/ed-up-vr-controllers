@@ -1,0 +1,82 @@
+#pragma once
+#include <array>
+#include <bitset>
+#include <cmath>
+#include <algorithm>
+#include <cstdint>
+#include "safety.hpp"
+#include "stability.hpp"
+#include "motion_aim.hpp"
+namespace edup::vrinput::foot {
+enum Action {Forward, Back, Left, Right, Jump, Interact, Crouch, Sprint, CycleTool, Reload, Primary, Secondary, EnergyLink, ProfileAnalyser, SuitTool, Holster, Flashlight, ToolMode, Count};
+using Keys=std::bitset<Count>;
+struct Hand {bool ready=false, primary=false, secondary=false, stickClick=false; float x=0,y=0,trigger=0,squeeze=0; Orientation aim{};};
+struct Sample {std::array<Hand,2> hand{}; bool enabled=false, focused=false;};
+struct Output {Keys held{}; int dx=0,dy=0; bool pointing=false;};
+struct Settings {float moveOn=.55f,moveOff=.35f,triggerOn=.65f,triggerOff=.40f; float lookPixelsPerSecond=900.f; bool invertY=false; bool toolLayer=true; bool motionAim=true; float aimPixelsPerDegree=10.f;};
+class Mapper {
+ Settings cfg_; Keys held_; bool armed_=false, tools_=false, layerReady_=false, chordBlocked_=false; float remX_=0,remY_=0; MotionAim motion_; bool clutch_=false;
+ bool hysteresis(Action a,float value,float on,float off) const {return value>=(held_[a]?off:on);}
+ static bool valid(const Hand& h){return h.ready&&analogValid(h.x,-1.f,1.f)&&analogValid(h.y,-1.f,1.f)&&analogValid(h.trigger,0.f,1.f)&&analogValid(h.squeeze,0.f,1.f);}
+ static bool neutral(const Hand& h){return std::abs(h.x)<.10f&&std::abs(h.y)<.10f&&h.trigger<.05f&&h.squeeze<.05f&&!h.primary&&!h.secondary&&!h.stickClick;}
+public:
+ explicit Mapper(Settings cfg={}):cfg_(cfg){
+  auto safe=[](float x,float fallback){return std::isfinite(x)?x:fallback;};
+  cfg_.moveOn=std::clamp(safe(cfg_.moveOn,.55f),.15f,1.f);cfg_.moveOff=std::clamp(safe(cfg_.moveOff,.35f),.10f,cfg_.moveOn);
+  cfg_.triggerOn=std::clamp(safe(cfg_.triggerOn,.65f),.15f,1.f);cfg_.triggerOff=std::clamp(safe(cfg_.triggerOff,.40f),.05f,cfg_.triggerOn);
+  cfg_.lookPixelsPerSecond=std::clamp(safe(cfg_.lookPixelsPerSecond,900.f),0.f,3000.f);
+  cfg_.aimPixelsPerDegree=std::clamp(safe(cfg_.aimPixelsPerDegree,10.f),1.f,30.f);
+ }
+ Output reset(){held_.reset();armed_=false;tools_=layerReady_=chordBlocked_=false;remX_=remY_=0;motion_.reset();clutch_=false;return {};}
+ Output update(const Sample& s,float dt){
+  const auto& l=s.hand[0];const auto& r=s.hand[1];
+  if(!s.enabled||!s.focused||!valid(l)||!valid(r)||!std::isfinite(dt)||dt<0||dt>.1f)return reset();
+  if(!armed_){armed_=neutral(l)&&neutral(r);layerReady_=armed_;return {};}
+  // Left grip is a physical modifier, not a game action. Hysteresis prevents chatter.
+  const bool nextTools=cfg_.toolLayer && l.squeeze>=(tools_?.40f:.70f);
+  if(nextTools!=tools_){tools_=nextTools;layerReady_=false;chordBlocked_=false;held_.reset();remX_=remY_=0;motion_.reset();clutch_=false;return {};}
+  auto layerNeutral=[&]{Hand left=l;if(tools_)left.squeeze=0;return neutral(left)&&neutral(r);};
+  if(!layerReady_){layerReady_=layerNeutral();return {};}
+  if(tools_){
+   // Never carry ordinary actions (including fire) into the tool layer.
+   const std::array<bool,6> buttons={l.primary,l.secondary,r.primary,r.secondary,l.stickClick,r.stickClick};
+   const std::array<Action,6> actions={EnergyLink,ProfileAnalyser,SuitTool,Holster,Flashlight,ToolMode};
+   unsigned n=0,selected=0;for(unsigned i=0;i<buttons.size();++i)if(buttons[i]){++n;selected=i;}
+   if(n>1||l.trigger>=.05f||r.trigger>=.05f||(n==1&&held_.any()&&!held_[actions[selected]]))chordBlocked_=true;
+   Output o;
+   if(n==0&&l.trigger<.05f&&r.trigger<.05f)chordBlocked_=false;
+   if(n==1&&!chordBlocked_)o.held[actions[selected]]=true;
+   held_=o.held;return o;
+  }
+  Output out; auto set=[&](Action a,float v,float on,float off){out.held[a]=hysteresis(a,v,on,off);};
+  set(Forward,l.y,cfg_.moveOn,cfg_.moveOff);set(Back,-l.y,cfg_.moveOn,cfg_.moveOff);
+  set(Right,l.x,cfg_.moveOn,cfg_.moveOff);set(Left,-l.x,cfg_.moveOn,cfg_.moveOff);
+  out.held[Jump]=r.secondary;out.held[Interact]=r.primary;out.held[Crouch]=l.primary;
+  out.held[Sprint]=l.stickClick;out.held[CycleTool]=l.secondary;out.held[Reload]=r.stickClick;
+  set(Primary,r.trigger,cfg_.triggerOn,cfg_.triggerOff);set(Secondary,l.trigger,cfg_.triggerOn,cfg_.triggerOff);
+  const bool nextClutch=cfg_.motionAim&&r.squeeze>=(clutch_?.40f:.70f);
+  if(nextClutch!=clutch_){clutch_=nextClutch;motion_.reset();remX_=remY_=0;}
+  if(clutch_){
+   auto aim=motion_.update(true,r.aim,cfg_.aimPixelsPerDegree,cfg_.invertY,dt);
+   out.dx=aim.dx;out.dy=aim.dy;
+   if(!aim.usable)return reset();
+   out.pointing=true;held_=out.held;return out;
+  }
+  // InputCore already applies its stick deadzone. Fractional pixels preserve slow motion.
+  remX_+=std::clamp(r.x,-1.f,1.f)*cfg_.lookPixelsPerSecond*dt;
+  remY_+=std::clamp(r.y,-1.f,1.f)*cfg_.lookPixelsPerSecond*dt*(cfg_.invertY?1.f:-1.f);
+  out.dx=static_cast<int>(remX_);out.dy=static_cast<int>(remY_);remX_-=out.dx;remY_-=out.dy;
+  if(r.x==0)remX_=0;if(r.y==0)remY_=0;
+  held_=out.held;return out;
+ }
+};
+// Only transitions are emitted. A held action is not a stream of repeated key presses.
+template<class Sink> bool dispatch(Keys& sent,const Keys& desired,Sink&& sink){
+ bool ok=true;
+ // Release first; never press if any release failed.
+ for(unsigned i=0;i<Count;++i)if(sent[i]&&!desired[i]){if(sink(static_cast<Action>(i),false))sent.reset(i);else ok=false;}
+ if(!ok)return false;
+ for(unsigned i=0;i<Count;++i)if(!sent[i]&&desired[i]){if(sink(static_cast<Action>(i),true))sent.set(i);else return false;}
+ return true;
+}
+}

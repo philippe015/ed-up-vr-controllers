@@ -1,0 +1,26 @@
+Internal ctest changing into directory: /tmp/edup09-build
+Test project /tmp/edup09-build
+    Start 1: safety
+1/9 Test #1: safety ...........................   Passed    0.00 sec
+    Start 2: onfoot
+2/9 Test #2: onfoot ...........................   Passed    0.00 sec
+    Start 3: odyssey_tools
+3/9 Test #3: odyssey_tools ....................   Passed    0.00 sec
+    Start 4: motion_aim
+4/9 Test #4: motion_aim .......................   Passed    0.00 sec
+    Start 5: virtual_hands
+5/9 Test #5: virtual_hands ....................   Passed    0.00 sec
+    Start 6: stereo_overlay_projection
+6/9 Test #6: stereo_overlay_projection ........   Passed    0.00 sec
+    Start 7: vr_interactions
+7/9 Test #7: vr_interactions ..................   Passed    0.00 sec
+    Start 8: control_center_config
+8/9 Test #8: control_center_config ............   Passed    0.68 sec
+    Start 9: stability_faults
+9/9 Test #9: stability_faults .................   Passed    0.00 sec
+
+100% tests passed, 0 tests failed out of 9
+
+Total Test time (real) =   0.70 sec
+
+Tests Linux portables uniquement (8 suites C++ et une suite Python). Windows, OpenXR et Quest 3 non testés.

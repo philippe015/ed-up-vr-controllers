@@ -8,7 +8,7 @@ Experimental community contribution to [ED Unofficial Patch](https://github.com/
 
 [Download ED-UP-VR-Controllers-v0.9-Stability.zip](https://github.com/user-attachments/files/35450529/ED-UP-VR-Controllers-v0.9-Stability.zip)
 
-The source archive is attached to [upstream proposal #272](https://github.com/characterecho-sean/ed-unofficial-patch/issues/272). It includes C++17 code, OpenXR controller actions, keyboard/mouse input bridge, virtual hands, experimental stereo overlay and visual laser pointer, haptics, French configuration interface, integration scripts, automated tests and Windows validation documentation. The source files have not yet been imported into this repository.
+The source archive is attached to [upstream proposal #272](https://github.com/characterecho-sean/ed-unofficial-patch/issues/272). It includes C++17 code, OpenXR controller actions, keyboard/mouse input bridge, virtual hands, experimental stereo overlay and visual laser pointer, haptics, French configuration interface, integration scripts, automated tests and Windows validation documentation. Browse the [source code and technical documentation](vr-controllers/README.md), [Windows validation plan](vr-controllers/VALIDATION-WINDOWS.md) and [MIT license](LICENSE).
 
 ## Status
 
