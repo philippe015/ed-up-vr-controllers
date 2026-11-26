@@ -14,7 +14,7 @@ using Keys=std::bitset<Count>;
 struct Hand {bool ready=false, primary=false, secondary=false, stickClick=false; float x=0,y=0,trigger=0,squeeze=0; Orientation aim{}; edup::experimental::Vec3 gripPosition{}; bool gripTracked=false;};
 struct Sample {std::array<Hand,2> hand{}; bool enabled=false, focused=false;};
 struct Output {Keys held{}; int dx=0,dy=0; bool pointing=false;};
-struct Settings {float moveOn=.55f,moveOff=.35f,triggerOn=.65f,triggerOff=.40f; float lookPixelsPerSecond=900.f; bool invertY=false; bool toolLayer=true; bool motionAim=true; float aimPixelsPerDegree=10.f; bool twoHandAim=false; bool leftHanded=false; unsigned snapMode=0; unsigned snapPixelsPerDegree=10; unsigned extraLookDeadzonePercent=0;};
+struct Settings {float moveOn=.55f,moveOff=.35f,triggerOn=.65f,triggerOff=.40f; float lookPixelsPerSecond=900.f; bool invertY=false; bool toolLayer=true; bool motionAim=true; float aimPixelsPerDegree=10.f; bool twoHandAim=false; bool leftHanded=false; unsigned snapMode=0; unsigned snapPixelsPerDegree=10; unsigned extraLookDeadzonePercent=0; bool strictTools=false;};
 class Mapper {
  Settings cfg_; Keys held_; bool armed_=false, tools_=false, layerReady_=false, chordBlocked_=false; float remX_=0,remY_=0; MotionAim motion_; bool clutch_=false; edup::experimental::TwoHandFilter twoFilter_; MotionAim twoMotion_; bool twoActive_=false; double twoTime_=0; bool snapReady_=false;
  bool hysteresis(Action a,float value,float on,float off) const {return value>=(held_[a]?off:on);}
@@ -64,9 +64,12 @@ public:
    const std::array<bool,6> buttons={l.primary,l.secondary,r.primary,r.secondary,l.stickClick,r.stickClick};
    const std::array<Action,6> actions={EnergyLink,ProfileAnalyser,SuitTool,Holster,Flashlight,ToolMode};
    unsigned n=0,selected=0;for(unsigned i=0;i<buttons.size();++i)if(buttons[i]){++n;selected=i;}
+   // Optional strict selection: any conflicting physical input requires a clean release.
+   const bool conflict=cfg_.strictTools && (std::abs(l.x)>=.10f||std::abs(l.y)>=.10f||std::abs(r.x)>=.10f||std::abs(r.y)>=.10f||r.squeeze>=.05f);
+   if(conflict)chordBlocked_=true;
    if(n>1||l.trigger>=.05f||r.trigger>=.05f||(n==1&&held_.any()&&!held_[actions[selected]]))chordBlocked_=true;
    Output o;
-   if(n==0&&l.trigger<.05f&&r.trigger<.05f)chordBlocked_=false;
+   if(n==0&&!conflict&&l.trigger<.05f&&r.trigger<.05f)chordBlocked_=false;
    if(n==1&&!chordBlocked_)o.held[actions[selected]]=true;
    held_=o.held;return o;
   }
