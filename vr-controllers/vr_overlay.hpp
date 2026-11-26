@@ -28,11 +28,11 @@ inline void drawOverlay(ID3D11Device* device,ID3D11DeviceContext* ctx,ID3D11Rend
  if(FAILED(device->CheckFeatureSupport(D3D11_FEATURE_D3D11_OPTIONS,&options,sizeof(options)))||!options.ClearView)return;
  Microsoft::WRL::ComPtr<ID3D11DeviceContext1> context1;if(FAILED(ctx->QueryInterface(IID_PPV_ARGS(&context1))))return;
  const Fov f{eye.fov.angleLeft,eye.fov.angleRight,eye.fov.angleDown,eye.fov.angleUp};
- const float colors[3][4]={{.03f,.65f,1.f,1.f},{1.f,.45f,.04f,1.f},{.12f,1.f,.35f,1.f}};
+ const float colors[4][4]={{.03f,.65f,1.f,1.f},{1.f,.45f,.04f,1.f},{.12f,1.f,.35f,1.f},{.9f,.9f,.15f,1.f}};
  // Bound the GPU work: 19 segments * at most 49 small rectangles per hand.
  std::array<D3D11_RECT,count*49> rects{};
- for(unsigned h=0;h<3;++h){if(h<2?activeOverlay->valid[h]!=1:activeOverlay->laserValid!=1)continue;unsigned n=0;
-  for(unsigned i=0;i<(h<2?count:1u);++i){Line2 l;if(!eyeLine(h<2?segment(*activeOverlay,h,i):activeOverlay->laser,xrPose(head),xrPose(eye.pose),f,l))continue;
+ for(unsigned h=0;h<4;++h){if(h<2?activeOverlay->valid[h]!=1:h==2?activeOverlay->laserValid!=1:activeOverlay->objectVisible!=1)continue;unsigned n=0;
+  for(unsigned i=0;i<(h<2?count:h==2?1u:12u);++i){Line2 l;if(!eyeLine(h<2?segment(*activeOverlay,h,i):h==2?activeOverlay->laser:activeOverlay->objectLines[i],xrPose(head),xrPose(eye.pose),f,l))continue;
    float dx=(l.b.x-l.a.x)*width,dy=(l.b.y-l.a.y)*height;
    unsigned steps=std::clamp(unsigned(std::ceil((std::max)(std::abs(dx),std::abs(dy))/3.f)),1u,48u);
    for(unsigned k=0;k<=steps;++k){float t=float(k)/steps;LONG x=LONG(std::lround(l.a.x*(width-1)+t*(l.b.x-l.a.x)*(width-1)));LONG y=LONG(std::lround(l.a.y*(height-1)+t*(l.b.y-l.a.y)*(height-1)));
