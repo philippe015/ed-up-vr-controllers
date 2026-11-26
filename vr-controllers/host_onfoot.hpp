@@ -22,11 +22,11 @@ class HostOnFoot {
  void clearHands(){lab_.reset();labFrame_={};overlay_={};overlayTime_=0;if(handsEnabled_)handsChannel_.write(hands::Snapshot{});}
  static hands::Pose convert(const XrPosef& p){return {{p.position.x,p.position.y,p.position.z},{p.orientation.x,p.orientation.y,p.orientation.z,p.orientation.w}};}
  void publishHands(XrSpace view,XrSpace base,XrTime t,const InteractionReport& report){
-  if(!handsEnabled_&&!overlayEnabled_)return;hands::Snapshot out;XrPosef head{};
-  if(core_.locateHead(view,base,t,head))for(unsigned i=0;i<2;++i){const auto& h=core_.hands()[i];if(h.tracked&&h.ready)hands::set(out,i,hands::make(convert(h.grip),convert(head),i==0,h.trigger,h.squeeze));}
+  if(!handsEnabled_&&!overlayEnabled_)return;hands::Snapshot out;XrPosef head{};const bool headValid=core_.locateHead(view,base,t,head);
+  if(headValid)for(unsigned i=0;i<2;++i){const auto& h=core_.hands()[i];if(h.tracked&&h.ready)hands::set(out,i,hands::make(convert(h.grip),convert(head),i==0,h.trigger,h.squeeze));}
   out.controlMode=static_cast<uint32_t>(report.mode);out.leftHanded=leftHanded_?1u:0u;
   if(laserEnabled_&&report.pointing&&out.valid[0]&&out.valid[1]&&pointerRay(convert(core_.hands()[leftHanded_?0:1].aim),convert(head),out.laser))out.laserValid=1;
-  if(labEnabled_&&labFrame_.visible){out.objectVisible=1;out.objectOwner=labFrame_.owner;out.objectLines=hands::objectWire(labFrame_.object,convert(head));}
+  if(headValid&&labEnabled_&&labFrame_.visible){out.objectVisible=1;out.objectOwner=labFrame_.owner;out.objectLines=hands::objectWire(labFrame_.object,convert(head));}
   out.tick=GetTickCount64();
   if(overlayEnabled_){overlay_=out;overlayTime_=t;}
   if(handsEnabled_)handsChannel_.write(out);
