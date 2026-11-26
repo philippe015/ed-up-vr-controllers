@@ -45,5 +45,18 @@ int main() {
  l.gripTracked=true;o=step();if(o.dx||o.dy||o.held.any())return 23;
  l.squeeze=right.squeeze=0;step();l.squeeze=.8f;step();step();
  l.primary=true;if(!step().held[EnergyLink])return 24;
+ // Mirrored roles: physical left is dominant, right is support.
+ cfg.leftHanded=true;Mapper mirror(cfg);Sample m;m.enabled=m.focused=true;
+ auto& dominant=m.hand[0];auto& support=m.hand[1];
+ dominant.ready=support.ready=dominant.gripTracked=support.gripTracked=true;
+ dominant.aim.tracked=true;support.gripPosition={0,0,-.4};
+ auto tick=[&]{return mirror.update(m,.01f);};
+ tick();support.y=.8f;if(!tick().held[Forward])return 25;
+ support.y=0;dominant.squeeze=.8f;tick();support.squeeze=.8f;
+ o=tick();if(o.dx||o.dy||o.held.any())return 26;
+ support.gripPosition={.1,0,-.4};o=tick();if(o.dx<=0||o.held.any())return 27;
+ support.squeeze=dominant.squeeze=0;tick();tick();
+ support.squeeze=.8f;tick();tick();support.primary=true;
+ if(!tick().held[EnergyLink])return 28;
  return 0;
 }
