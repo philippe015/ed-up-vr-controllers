@@ -51,6 +51,8 @@ Settings loadAimSettings(const wchar_t* path){
  s.snapPixelsPerDegree=readNumber(path,L"Movement",L"SnapPixelsPerDegree",L"10",30);
  if(!s.snapPixelsPerDegree)throw std::invalid_argument("zero snap sensitivity");
  s.extraLookDeadzonePercent=readNumber(path,L"Movement",L"ExtraLookDeadzonePercent",L"0",40);
+ s.equipmentGestures=readNumber(path,L"Movement",L"EquipmentGestures",L"0",1)!=0;
+ s.equipmentScalePercent=readNumber(path,L"Movement",L"EquipmentScalePercent",L"100",130);if(s.equipmentScalePercent<70)throw std::invalid_argument("invalid equipment scale");
  s.weaponSelect=readNumber(path,L"Movement",L"WeaponSelect",L"0",1)!=0;
  s.strictTools=readNumber(path,L"Movement",L"StrictTools",L"0",1)!=0;
  s.toolLayer=readNumber(path,L"Movement",L"ToolLayer",L"1",1)!=0;
