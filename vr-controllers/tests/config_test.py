@@ -1,4 +1,4 @@
-import sys,tempfile,unittest
+import sys,tempfile,unittest,json
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 import control_center as c
@@ -25,6 +25,17 @@ class ConfigTests(unittest.TestCase):
   with self.assertRaises(ValueError):c.validate(v)
   v['Weapons','SelectSecondaryWeapon']=2
   with self.assertRaises(ValueError):c.validate(v)
+ def test_runtime_detection(self):
+  with tempfile.TemporaryDirectory() as d:
+   base=Path(d);p=base/'steamxr_win64.json';lib=base/'vrclient_x64.dll'
+   p.write_text(json.dumps({'file_format_version':'1.0.0','runtime':{'library_path':lib.name}}),encoding='utf-8')
+   r=c.inspect_runtime(p,'test');self.assertEqual(r['provider'],'SteamVR');self.assertTrue(r['manifest_ok']);self.assertFalse(r['library_ok'])
+   lib.touch();self.assertTrue(c.inspect_runtime(p,'test')['library_ok'])
+   p.write_text('invalid');self.assertFalse(c.inspect_runtime(p,'test')['manifest_ok'])
+   self.assertFalse(c.inspect_runtime(None,'test')['library_ok'])
+   self.assertEqual(c.runtime_family('oculus_openxr_64.json'),'Meta / Oculus')
+   self.assertEqual(c.runtime_family('vdxr.json'),'Virtual Desktop / VDXR')
+   self.assertEqual(c.runtime_family('unknown.json'),'Autre / inconnu')
  def test_preserve_unknown(self):
   with tempfile.TemporaryDirectory() as d:
    p=Path(d)/'edup-vr-tools.ini';p.write_text('[Other]\nFoo=bar\n');c.save(p,c.defaults());self.assertIn('Foo = bar',p.read_text())
