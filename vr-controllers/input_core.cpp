@@ -26,20 +26,22 @@ XrResult InputCore::initialize(XrInstance instance, PFN_xrGetInstanceProcAddr re
   for(unsigned i=0;i<Count;++i){ XrActionCreateInfo a{XR_TYPE_ACTION_CREATE_INFO}; a.actionType=types[i]; a.countSubactionPaths=2;a.subactionPaths=paths_.data();std::snprintf(a.actionName,sizeof(a.actionName),"%s",names[i]);std::snprintf(a.localizedActionName,sizeof(a.localizedActionName),"%s",names[i]);TRY(CreateAction_(set_,&a,&actions_[i]));}
   // Each profile is independent. A runtime can reject a profile it does not support.
   bool supported=false; XrResult last=XR_ERROR_PATH_UNSUPPORTED;
-  auto attempt=[&](const char* p,bool simple){last=suggest(p,simple);supported|=last==XR_SUCCESS;};
-  attempt("/interaction_profiles/oculus/touch_controller",false);
-  if(plus)attempt("/interaction_profiles/meta/touch_controller_plus",false);
-  attempt("/interaction_profiles/khr/simple_controller",true);
+  auto attempt=[&](ProfileKind p){last=suggest(p);supported|=last==XR_SUCCESS;};
+  attempt(ProfileKind::Touch);
+  if(plus)attempt(ProfileKind::TouchPlus);
+  attempt(ProfileKind::Index);
+  attempt(ProfileKind::Simple);
   return supported?XR_SUCCESS:last;
  }; XrResult result=build();if(result!=XR_SUCCESS)shutdown();return result;
 }
-XrResult InputCore::suggest(const char* profile,bool simple){
- XrPath p;TRY(StringToPath_(instance_,profile,&p));std::vector<XrActionSuggestedBinding> b;
+XrResult InputCore::suggest(ProfileKind kind){
+ const auto profile=profileSpec(kind);
+ XrPath p;TRY(StringToPath_(instance_,profile.path,&p));std::vector<XrActionSuggestedBinding> b;
  for(unsigned i=0;i<2;++i){
   auto add=[&](A action,const char* suffix)->XrResult{XrPath path;auto str=std::string(side[i])+suffix;TRY(StringToPath_(instance_,str.c_str(),&path));b.push_back({actions_[action],path});return XR_SUCCESS;};
   TRY(add(Grip,"/input/grip/pose"));TRY(add(Aim,"/input/aim/pose"));TRY(add(Haptic,"/output/haptic"));
-  if(simple){TRY(add(Primary,"/input/select/click"));TRY(add(Secondary,"/input/menu/click"));}
-  else {TRY(add(Trigger,"/input/trigger/value"));TRY(add(Squeeze,"/input/squeeze/value"));TRY(add(Stick,"/input/thumbstick"));TRY(add(StickClick,"/input/thumbstick/click"));TRY(add(Primary,i?"/input/a/click":"/input/x/click"));TRY(add(Secondary,i?"/input/b/click":"/input/y/click"));}
+  TRY(add(Primary,profile.primary[i]));TRY(add(Secondary,profile.secondary[i]));
+  if(profile.full){TRY(add(Trigger,"/input/trigger/value"));TRY(add(Squeeze,profile.squeeze));TRY(add(Stick,profile.stick));TRY(add(StickClick,profile.stickClick));}
  }
  XrInteractionProfileSuggestedBinding info{XR_TYPE_INTERACTION_PROFILE_SUGGESTED_BINDING};info.interactionProfile=p;info.countSuggestedBindings=static_cast<uint32_t>(b.size());info.suggestedBindings=b.data();return SuggestInteractionProfileBindings_(instance_,&info);
 }
