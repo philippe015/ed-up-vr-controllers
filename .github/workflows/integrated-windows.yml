@@ -1,0 +1,106 @@
+name: Integrated ED-UP Windows proof build
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/integrated-windows.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: edup-integrated-proof
+  cancel-in-progress: false
+jobs:
+  integrated:
+    runs-on: windows-2022
+    timeout-minutes: 90
+    defaults:
+      run:
+        shell: powershell
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+          path: contribution
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: characterecho-sean/ed-unofficial-patch
+          ref: ba1de96c84fab3a6dde3f915d4a7fc9bb40adff1
+          fetch-depth: 0
+          persist-credentials: false
+          path: upstream
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: '3.12'
+      - name: Apply experimental integration and record diff
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $actual = git -C upstream rev-parse HEAD
+          if ($LASTEXITCODE -ne 0 -or $actual -ne 'ba1de96c84fab3a6dde3f915d4a7fc9bb40adff1') { throw 'Unexpected upstream revision' }
+          python contribution/appliquer-integration.py upstream --check
+          if ($LASTEXITCODE -ne 0) { throw 'Integration anchors changed' }
+          if (Test-Path upstream/vr-controllers) { throw 'Refusing to replace upstream files' }
+          Copy-Item contribution/vr-controllers upstream/vr-controllers -Recurse
+          python contribution/appliquer-integration.py upstream
+          if ($LASTEXITCODE -ne 0) { throw 'Integration failed' }
+          git -C upstream diff --check
+          if ($LASTEXITCODE -ne 0) { throw 'Integration diff check failed' }
+          $changed = @(git -C upstream diff --name-only)
+          $expected = @('build.bat','src/openxr/d3d11_stereo.cpp','src/openxr/native_runtime_host.h')
+          if ($LASTEXITCODE -ne 0 -or (Compare-Object $changed $expected)) { throw 'Unexpected tracked modifications' }
+          git -C upstream diff | Out-File -Encoding utf8 integration.diff
+          @("contribution=$env:GITHUB_SHA","upstream=$actual","kind=experimental-proof") | Out-File -Encoding utf8 build-provenance.txt
+      - name: Install upstream hash-pinned requirements
+        working-directory: upstream
+        run: |
+          python -m pip install --require-hashes --only-binary :all: -r tools/requirements.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Python requirements failed' }
+      - name: Fetch pinned upstream SDKs
+        working-directory: upstream
+        run: |
+          python tools/fetch_ngx.py --into third_party/ngx
+          if ($LASTEXITCODE -ne 0) { throw 'NGX failed' }
+          python tools/fetch_ffx_dx11.py --dest third_party/ffx-dx11
+          if ($LASTEXITCODE -ne 0) { throw 'FFX failed' }
+          python tools/fetch_xess.py --dest third_party/xess
+          if ($LASTEXITCODE -ne 0) { throw 'XeSS failed' }
+          python tools/fetch_edhm_2dmigoto.py --dest third_party/edhm_2dmigoto
+          if ($LASTEXITCODE -ne 0) { throw 'EDHM dependency failed' }
+          python tools/fetch_fsr4.py --dest third_party/fsr4
+          if ($LASTEXITCODE -ne 0) { throw 'FSR4 failed' }
+          python tools/fetch_openxr_loader.py
+          if ($LASTEXITCODE -ne 0) { throw 'OpenXR loader failed' }
+      - name: Verify upstream SDKs
+        working-directory: upstream
+        run: |
+          python tools/fetch_ngx.py --verify third_party/ngx
+          if ($LASTEXITCODE -ne 0) { throw 'NGX verification failed' }
+          python tools/fetch_ffx_dx11.py --verify third_party/ffx-dx11
+          if ($LASTEXITCODE -ne 0) { throw 'FFX verification failed' }
+          python tools/fetch_xess.py --verify third_party/xess
+          if ($LASTEXITCODE -ne 0) { throw 'XeSS verification failed' }
+          python tools/fetch_edhm_2dmigoto.py --verify third_party/edhm_2dmigoto
+          if ($LASTEXITCODE -ne 0) { throw 'EDHM verification failed' }
+          python tools/fetch_fsr4.py --verify third_party/fsr4
+          if ($LASTEXITCODE -ne 0) { throw 'FSR4 verification failed' }
+          python tools/fetch_openxr_loader.py --verify
+          if ($LASTEXITCODE -ne 0) { throw 'OpenXR verification failed' }
+      - name: Compile integrated patch and upstream test rigs
+        working-directory: upstream
+        run: |
+          cmd /c "build.bat --wait-lock --jobs 4"
+          if ($LASTEXITCODE -ne 0) { throw 'Integrated build failed' }
+          foreach ($file in @('build/d3d11.dll','build/edvr_openxr_runtime.dll','build/smoke.exe')) {
+            if (!(Test-Path -LiteralPath $file -PathType Leaf)) { throw "Missing build output: $file" }
+          }
+          & build/smoke.exe build/d3d11.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Smoke test failed' }
+      - name: Upload proof diagnostics (not a release or installer)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-proof-diagnostics
+          path: |
+            integration.diff
+            build-provenance.txt
+            upstream/build/**/*.log
+          if-no-files-found: warn
