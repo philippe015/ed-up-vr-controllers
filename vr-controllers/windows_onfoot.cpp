@@ -86,7 +86,7 @@ struct WindowsBridge::Impl {
   if(out.dx||out.dy){if(!focus()){if(!release())fault=true;return {};}
    INPUT m{};m.type=INPUT_MOUSE;m.mi.dx=out.dx;m.mi.dy=out.dy;m.mi.dwFlags=MOUSEEVENTF_MOVE;if(SendInput(1,&m,sizeof(m))!=1){fault=true;release();return {};}}
   if(!focus()){if(!release())fault=true;return {};}
-  InteractionReport report{sent&~before,out.pointing};
+  InteractionReport report{sent&~before,out.pointing,out.mode};
   for(unsigned i=0;i<Count;++i)if(b[i].kind==Binding::Disabled)report.pressed.reset(i);
   return report;
  }
