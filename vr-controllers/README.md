@@ -1,3 +1,9 @@
+# v0.9.5 — VR Comfort (experimental)
+
+New French Control Center Confort VR tab. `[Movement] SnapMode=0` retains continuous rotation; 1, 2, 3 select nominal 15, 30, 45 degree turns. `SnapPixelsPerDegree=10` is a calibration setting (1–30); actual in-game angles are not guaranteed because output is a relative mouse pulse, not a native OpenXR camera rotation. Stick horizontal threshold 0.75, rearm below 0.20. No repeated or queued turns. Motion clutch and tool transitions clear the latch. `ExtraLookDeadzonePercent=0` (0–40) adds deadzone to continuous look axes after InputCore processing; it does not alter movement or snap thresholds. Existing defaults unchanged. Both handedness profiles supported. Restart required after saving. Automated motion regression tests added; Windows build and headset comfort not yet verified.
+
+---
+
 # v0.9.4 — Dual Hand Profile (experimental)
 
 New `[Movement] LeftHanded=1` mirrors all logical controller roles (default 0). Left-handed mode: left stick looks, right stick moves; left grip aims and right grip selects tools. For two-hand mode hold dominant grip first, then support grip. Laser and haptic channels follow the selected roles. Physical hand rendering remains unchanged. The French Control Center exposes LeftHanded and TwoHandEnabled. Restart the game after changes. Two-hand mode remains opt-in; no firing or walking in that mode. Tests cover mirrored movement, two-hand aim and tool selection. Compilation and headset testing pending.
