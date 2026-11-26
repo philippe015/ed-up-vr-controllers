@@ -14,7 +14,7 @@ using Keys=std::bitset<Count>;
 struct Hand {bool ready=false, primary=false, secondary=false, stickClick=false; float x=0,y=0,trigger=0,squeeze=0; Orientation aim{}; edup::experimental::Vec3 gripPosition{}; bool gripTracked=false;};
 struct Sample {std::array<Hand,2> hand{}; bool enabled=false, focused=false;};
 struct Output {Keys held{}; int dx=0,dy=0; bool pointing=false;};
-struct Settings {float moveOn=.55f,moveOff=.35f,triggerOn=.65f,triggerOff=.40f; float lookPixelsPerSecond=900.f; bool invertY=false; bool toolLayer=true; bool motionAim=true; float aimPixelsPerDegree=10.f; bool twoHandAim=false;};
+struct Settings {float moveOn=.55f,moveOff=.35f,triggerOn=.65f,triggerOff=.40f; float lookPixelsPerSecond=900.f; bool invertY=false; bool toolLayer=true; bool motionAim=true; float aimPixelsPerDegree=10.f; bool twoHandAim=false; bool leftHanded=false;};
 class Mapper {
  Settings cfg_; Keys held_; bool armed_=false, tools_=false, layerReady_=false, chordBlocked_=false; float remX_=0,remY_=0; MotionAim motion_; bool clutch_=false; edup::experimental::TwoHandFilter twoFilter_; MotionAim twoMotion_; bool twoActive_=false; double twoTime_=0;
  bool hysteresis(Action a,float value,float on,float off) const {return value>=(held_[a]?off:on);}
@@ -30,10 +30,10 @@ public:
  }
  Output reset(){held_.reset();armed_=false;tools_=layerReady_=chordBlocked_=false;remX_=remY_=0;motion_.reset();clutch_=false;twoFilter_.reset();twoMotion_.reset();twoActive_=false;twoTime_=0;return {};}
  Output update(const Sample& s,float dt){
-  const auto& l=s.hand[0];const auto& r=s.hand[1];
+  const auto& l=s.hand[cfg_.leftHanded?1:0];const auto& r=s.hand[cfg_.leftHanded?0:1];
   if(!s.enabled||!s.focused||!valid(l)||!valid(r)||!std::isfinite(dt)||dt<0||dt>.1f)return reset();
   if(!armed_){armed_=neutral(l)&&neutral(r);layerReady_=armed_;return {};}
-  // Experimental mode: right grip first, then left. Left grip alone still selects tools.
+  // Experimental mode: dominant grip first, then support grip. Support grip alone selects tools.
   if(twoActive_ || (cfg_.twoHandAim && cfg_.motionAim && !tools_ && layerReady_ && clutch_ && r.squeeze>=.70f && l.squeeze>=.70f)){
    if(!twoActive_){
     twoActive_=true;twoTime_=0;twoFilter_.reset();twoMotion_.reset();
