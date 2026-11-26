@@ -18,7 +18,7 @@ enum class ControlMode : uint32_t { Neutral=0, Normal=1, Tools=2, Motion=3, TwoH
 struct Output {Keys held{}; int dx=0,dy=0; bool pointing=false; ControlMode mode=ControlMode::Neutral;};
 struct Settings {float moveOn=.55f,moveOff=.35f,triggerOn=.65f,triggerOff=.40f; float lookPixelsPerSecond=900.f; bool invertY=false; bool toolLayer=true; bool motionAim=true; float aimPixelsPerDegree=10.f; bool twoHandAim=false; bool leftHanded=false; unsigned snapMode=0; unsigned snapPixelsPerDegree=10; unsigned extraLookDeadzonePercent=0; bool strictTools=false; bool weaponSelect=false; bool equipmentGestures=false; unsigned equipmentScalePercent=100;};
 class Mapper {
- Settings cfg_; Keys held_; bool armed_=false, tools_=false, layerReady_=false, chordBlocked_=false; float remX_=0,remY_=0; MotionAim motion_; bool clutch_=false; edup::experimental::TwoHandFilter twoFilter_; MotionAim twoMotion_; bool twoActive_=false; double twoTime_=0; bool snapReady_=false; bool weaponBusy_=false,weaponConsumed_=false; EquipmentGesture equipment_; bool gestureLocked_=false; Action gestureAction_=Count; float gesturePulse_=0;
+ Settings cfg_; Keys held_; bool armed_=false, tools_=false, layerReady_=false, chordBlocked_=false; float remX_=0,remY_=0; MotionAim motion_; bool clutch_=false; edup::experimental::TwoHandFilter twoFilter_; MotionAim twoMotion_; bool twoActive_=false; double twoTime_=0; bool snapReady_=false; bool weaponBusy_=false,weaponConsumed_=false; EquipmentGesture equipment_; bool gestureLocked_=false,gestureInhibit_=false; EquipmentZone gestureZone_=EquipmentZone::None; Action gestureAction_=Count; float gesturePulse_=0;
  bool hysteresis(Action a,float value,float on,float off) const {return value>=(held_[a]?off:on);}
  static bool valid(const Hand& h){return h.ready&&analogValid(h.x,-1.f,1.f)&&analogValid(h.y,-1.f,1.f)&&analogValid(h.trigger,0.f,1.f)&&analogValid(h.squeeze,0.f,1.f);}
  static bool neutral(const Hand& h){return std::abs(h.x)<.10f&&std::abs(h.y)<.10f&&h.trigger<.05f&&h.squeeze<.05f&&!h.primary&&!h.secondary&&!h.stickClick;}
@@ -32,7 +32,7 @@ public:
   cfg_.equipmentScalePercent=std::clamp(cfg_.equipmentScalePercent,70u,130u);
   cfg_.aimPixelsPerDegree=std::clamp(safe(cfg_.aimPixelsPerDegree,10.f),1.f,30.f);
  }
- Output reset(){held_.reset();armed_=false;tools_=layerReady_=chordBlocked_=false;remX_=remY_=0;motion_.reset();clutch_=false;twoFilter_.reset();twoMotion_.reset();twoActive_=false;twoTime_=0;snapReady_=false;weaponBusy_=weaponConsumed_=false;equipment_.reset();gestureLocked_=false;gestureAction_=Count;gesturePulse_=0;return {};}
+ Output reset(){held_.reset();armed_=false;tools_=layerReady_=chordBlocked_=false;remX_=remY_=0;motion_.reset();clutch_=false;twoFilter_.reset();twoMotion_.reset();twoActive_=false;twoTime_=0;snapReady_=false;weaponBusy_=weaponConsumed_=false;equipment_.reset();gestureLocked_=gestureInhibit_=false;gestureZone_=EquipmentZone::None;gestureAction_=Count;gesturePulse_=0;return {};}
  Output update(const Sample& s,float dt){
   const auto& l=s.hand[cfg_.leftHanded?1:0];const auto& r=s.hand[cfg_.leftHanded?0:1];
   if(!s.enabled||!s.focused||!valid(l)||!valid(r)||!std::isfinite(dt)||dt<0||dt>=.1f)return reset();
@@ -59,7 +59,7 @@ public:
   }
   // Left grip is a physical modifier, not a game action. Hysteresis prevents chatter.
   const bool nextTools=cfg_.toolLayer && l.squeeze>=(tools_?.40f:.70f);
-  if(nextTools!=tools_){tools_=nextTools;layerReady_=false;chordBlocked_=false;weaponBusy_=weaponConsumed_=false;equipment_.reset();gestureLocked_=false;gestureAction_=Count;gesturePulse_=0;held_.reset();remX_=remY_=0;motion_.reset();clutch_=false;snapReady_=false;return {};}
+  if(nextTools!=tools_){tools_=nextTools;layerReady_=false;chordBlocked_=false;weaponBusy_=weaponConsumed_=false;equipment_.reset();gestureLocked_=gestureInhibit_=false;gestureZone_=EquipmentZone::None;gestureAction_=Count;gesturePulse_=0;held_.reset();remX_=remY_=0;motion_.reset();clutch_=false;snapReady_=false;return {};}
   auto layerNeutral=[&]{Hand left=l;if(tools_)left.squeeze=0;return neutral(left)&&neutral(r);};
   if(!layerReady_){layerReady_=layerNeutral();return {};}
   if(tools_){
@@ -71,12 +71,12 @@ public:
    // No actions from other layers while this gesture is active.
    if(cfg_.equipmentGestures&&(gestureLocked_||r.squeeze>=.70f)){
     gestureLocked_=true;Output o;o.mode=ControlMode::Tools;
-    const bool clean=s.headTracked&&r.gripTracked&&n==0&&l.trigger<.05f&&r.trigger<.05f&&
+    const bool clean=!gestureInhibit_&&s.headTracked&&r.gripTracked&&n==0&&l.trigger<.05f&&r.trigger<.05f&&
       std::abs(l.x)<.10f&&std::abs(l.y)<.10f&&std::abs(r.x)<.10f&&std::abs(r.y)<.10f&&
       !chordBlocked_&&!weaponBusy_&&(held_.none()||(gestureAction_!=Count&&held_[gestureAction_]));
     const auto zone=clean?equipmentZone({float(r.gripPosition.x),float(r.gripPosition.y),float(r.gripPosition.z)},s.head,cfg_.leftHanded,cfg_.equipmentScalePercent/100.f):EquipmentZone::None;
     const auto selectedZone=equipment_.update(r.squeeze,zone,clean,dt);
-    if(!clean||r.squeeze<.40f){gestureAction_=Count;gesturePulse_=0;}
+    if(!clean||r.squeeze<.40f||(gestureZone_!=EquipmentZone::None&&zone!=gestureZone_)){gestureInhibit_=true;gestureAction_=Count;gesturePulse_=0;}
     if(selectedZone!=EquipmentZone::None){
      switch(selectedZone){
       case EquipmentZone::Hip:gestureAction_=SelectSecondaryWeapon;break;
@@ -87,11 +87,11 @@ public:
       case EquipmentZone::Reload:gestureAction_=Reload;break;
       default:gestureAction_=Count;break;
      }
-     gesturePulse_=.08f;
+     gestureZone_=selectedZone;gesturePulse_=.08f;
     }
-    if(gesturePulse_>0&&gestureAction_!=Count&&clean&&r.squeeze>=.40f&&zone!=EquipmentZone::None){o.held[gestureAction_]=true;gesturePulse_-=dt;}
+    if(gesturePulse_>0&&gestureAction_!=Count&&clean&&r.squeeze>=.40f&&!gestureInhibit_&&zone==gestureZone_){o.held[gestureAction_]=true;gesturePulse_-=dt;}
     if(r.squeeze<.05f&&n==0&&l.trigger<.05f&&r.trigger<.05f&&std::abs(l.x)<.10f&&std::abs(l.y)<.10f&&std::abs(r.x)<.10f&&std::abs(r.y)<.10f){
-     equipment_.reset();gestureLocked_=false;gestureAction_=Count;gesturePulse_=0;
+     equipment_.reset();gestureLocked_=gestureInhibit_=false;gestureZone_=EquipmentZone::None;gestureAction_=Count;gesturePulse_=0;
     }
     held_=o.held;return o;
    }
