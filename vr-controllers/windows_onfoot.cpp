@@ -47,6 +47,10 @@ Settings loadAimSettings(const wchar_t* path){
  const auto sensitivity=readNumber(path,L"MotionAim",L"PixelsPerDegree",L"10",30);if(!sensitivity)throw std::invalid_argument("zero aim sensitivity");
  s.aimPixelsPerDegree=float(sensitivity);
  s.lookPixelsPerSecond=float(readNumber(path,L"Movement",L"LookPixelsPerSecond",L"900",3000));
+ s.snapMode=readNumber(path,L"Movement",L"SnapMode",L"0",3);
+ s.snapPixelsPerDegree=readNumber(path,L"Movement",L"SnapPixelsPerDegree",L"10",30);
+ if(!s.snapPixelsPerDegree)throw std::invalid_argument("zero snap sensitivity");
+ s.extraLookDeadzonePercent=readNumber(path,L"Movement",L"ExtraLookDeadzonePercent",L"0",40);
  s.toolLayer=readNumber(path,L"Movement",L"ToolLayer",L"1",1)!=0;
  return s;
 }
