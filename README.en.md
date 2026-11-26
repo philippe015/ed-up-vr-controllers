@@ -1,4 +1,4 @@
-# ED-UP VR Controllers — v0.9.9 Experimental
+# ED-UP VR Controllers — v0.9.10 Experimental
 
 **By Philou Cyberpunk — Elite Dangerous: Odyssey / Windows 11 x64 / Meta Quest 3 / OpenXR**
 
@@ -6,18 +6,18 @@
 
 ## Automatic Windows test-tools installer
 
-[![Download Windows x64](https://img.shields.io/badge/DOWNLOAD-WINDOWS%20x64-238636?style=for-the-badge&logo=windows)](https://github.com/philippe015/ed-up-vr-controllers/actions/runs/45866178749/artifacts/15139264119)
+[![Download Windows x64](https://img.shields.io/badge/DOWNLOAD-WINDOWS%20x64-238636?style=for-the-badge&logo=windows)](https://github.com/philippe015/ed-up-vr-controllers/actions/runs/45893029820/artifacts/15152477208)
 
-**[DOWNLOAD TEST INSTALLER (ZIP)](https://github.com/philippe015/ed-up-vr-controllers/actions/runs/45866178749/artifacts/15139264119)** — GitHub sign-in required, expires December 10, 2026.
+**[DOWNLOAD TEST INSTALLER (ZIP)](https://github.com/philippe015/ed-up-vr-controllers/actions/runs/45893029820/artifacts/15152477208)** — GitHub sign-in required, expires December 10, 2026.
 
 [Open the test installer build workflow](https://github.com/philippe015/ed-up-vr-controllers/actions/workflows/windows-test-installer.yml)
 
-Filename: `ED-UP-VR-Test-Setup-v0.9.9-x64.exe`. English/French wizard, per-user installation under LocalAppData without elevation, shortcuts, simulated viewer, read-only OpenXR diagnostic, configuration utility (Python 3.10+ required) and uninstall. CI builds the tools, runs CTest and checks installation/uninstallation before uploading the artifact. Windows build and automated install/uninstall tests passed on November 26, 2026. **This setup does not modify game DLLs and does not by itself enable the new in-game VR controls.** Full patch build and packaging validation remain required.
+Filename: `ED-UP-VR-Test-Setup-v0.9.10-x64.exe`. English/French wizard, per-user installation under LocalAppData without elevation, shortcuts, simulated viewer, read-only OpenXR diagnostic, configuration utility (Python 3.10+ required) and uninstall. CI builds the tools, runs CTest and checks installation/uninstallation before uploading the artifact. Windows build and automated install/uninstall tests passed on November 26, 2026. **This setup does not modify game DLLs and does not by itself enable the new in-game VR controls.** Full patch build and packaging validation remain required.
 
 ### How to install: double-click the setup file
 
 1. Download the ZIP above and select **Extract All** in Windows.
-2. Open the extracted directory and double-click `ED-UP-VR-Test-Setup-v0.9.9-x64.exe`. Verify its origin and supplied SHA-256 checksum before running. The setup is unsigned; Windows SmartScreen may display a warning.
+2. Open the extracted directory and double-click `ED-UP-VR-Test-Setup-v0.9.10-x64.exe`. Verify its origin and supplied SHA-256 checksum before running. The setup is unsigned; Windows SmartScreen may display a warning.
 3. Select **English** or **Français** in the setup wizard.
 4. Read and accept the experimental scope notice. Follow the wizard, optionally select the desktop shortcut, then click **Install**.
 5. Setup automatically copies the tools to `%LOCALAPPDATA%\EDUP-VR-Test-Tools` without administrator privileges or changes to game DLLs.
@@ -41,7 +41,7 @@ Setup does not automatically download dependencies or launch the game. Testing t
 
 ### Next development — v0.9.10: Odyssey weapon selection
 
-Experimental direct selection: hold the support grip and deflect the dominant stick up (primary weapon) or down (secondary weapon). WeaponSelect is off by default; configure the new bindings in the Armes tab. Return to neutral between selections; firing is blocked during selection. New tests and build remain unverified. The v0.9.9 download above remains the last verified diagnostic build.
+Experimental direct selection: hold the support grip and deflect the dominant stick up (primary weapon) or down (secondary weapon). WeaponSelect is off by default; configure the new bindings in the Armes tab. Return to neutral between selections; firing is blocked during selection. The portable module tests and v0.9.10 Windows installer passed. The integrated patch and in-game headset tests still require validation.
 
 [v0.9.10 technical notes](https://github.com/philippe015/ed-up-vr-controllers/blob/feature/onfoot-vr-enhanced/vr-controllers/README.md)
 
