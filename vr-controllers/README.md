@@ -1,3 +1,9 @@
+# v0.9.3 — Experimental two-hand motion integration
+
+Option `[MotionAim] TwoHandEnabled=1` (default 0; requires Enabled=1). From neutral, hold right grip first to enter normal motion aim, then hold left grip to enter two-hand mode. Left grip alone retains tool selection. While both grips are held, only relative camera rotation is emitted; ordinary actions including firing and movement are suppressed. Release both controllers to neutral to resume. Tracking loss, invalid geometry, button/trigger activation or discontinuity resets the mapper. The single-hand laser is intentionally not displayed in two-hand mode. No independent 3D weapon control, no automatic targeting. Experimental right-dominant mode only. Windows build and physical tests pending.
+
+---
+
 # v0.9.0 — Stability+ (prototype)
 
 Validation renforcée des données analogiques (NaN, infinis et valeurs hors limites) et des poses OpenXR (coordonnées finies, quaternion normalisé). Les valeurs invalides bloquent le mapper au lieu de l’armer au neutre. Surveillance du délai de 100 ms avec horloge monotone Windows. Tests de défauts et 20 000 échantillons pseudo-aléatoires reproductibles. Diagnostic statique du runtime OpenXR Windows et matrice d’essais physiques dans `VALIDATION-WINDOWS.md`.
