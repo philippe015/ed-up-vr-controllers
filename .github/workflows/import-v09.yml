@@ -38,7 +38,8 @@ jobs:
                   relative = PurePosixPath(*p.parts[1:])
                   if not (relative.parts[0] == "vr-controllers" or str(relative) in {"appliquer-integration.py", "publier-github.sh", ".github/workflows/vr-input-core.yml"}):
                       raise ValueError(item.filename)
-                  entries.append((Path(str(relative)), z.read(item)))
+                  if str(relative) != ".github/workflows/vr-input-core.yml":
+                      entries.append((Path(str(relative)), z.read(item)))
               for target, data in entries:
                   if target.exists() and target.read_bytes() != data:
                       raise RuntimeError(f"Refusing to overwrite {target}")
@@ -50,17 +51,8 @@ jobs:
           s = p.read_text()
           s = s.replace("The source files have not yet been imported into this repository.", "Browse the [source code and technical documentation](vr-controllers/README.md), [Windows validation plan](vr-controllers/VALIDATION-WINDOWS.md) and [MIT license](LICENSE).")
           p.write_text(s)
-          # Original workflow is designed for the upstream fork. Preserve its build
-          # steps, but check integration anchors against a separate upstream checkout.
-          p = Path(".github/workflows/vr-input-core.yml")
-          s = p.read_text().replace("branches: [feature/openxr-onfoot-stability]", "branches: [main]")
-          old = "      - name: Check upstream integration anchors\n        run: python appliquer-integration.py . --check"
-          new = "      - uses: actions/checkout@v4\n        with:\n          repository: characterecho-sean/ed-unofficial-patch\n          path: ed-up-upstream\n      - name: Check upstream integration anchors\n        run: python appliquer-integration.py ed-up-upstream --check"
-          if old not in s:
-              raise RuntimeError("Unexpected original workflow")
-          p.write_text(s.replace(old, new))
           PY
-          git add vr-controllers appliquer-integration.py publier-github.sh LICENSE README.md .github/workflows/vr-input-core.yml
+          git add vr-controllers appliquer-integration.py publier-github.sh LICENSE README.md
           git diff --cached --stat
           git diff --cached --quiet && exit 0
           git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'Import verified ED-UP VR Controllers v0.9 sources'
