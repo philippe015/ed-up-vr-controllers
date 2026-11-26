@@ -3,6 +3,9 @@ on:
   push:
     branches: [main, feature/onfoot-vr-enhanced]
     paths: ['.github/workflows/integrated-windows.yml', 'vr-controllers/**', 'appliquer-integration.py']
+  pull_request:
+    branches: [main]
+    paths: ['.github/workflows/integrated-windows.yml', 'vr-controllers/**', 'appliquer-integration.py']
   workflow_dispatch:
 permissions:
   contents: read
@@ -11,6 +14,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   integrated:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     strategy:
       fail-fast: false
       matrix:
@@ -24,6 +28,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           path: contribution
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -53,13 +58,13 @@ jobs:
           $expected = @('build.bat','src/openxr/d3d11_stereo.cpp','src/openxr/native_runtime_host.h')
           if ($LASTEXITCODE -ne 0 -or (Compare-Object $changed $expected)) { throw 'Unexpected tracked modifications' }
           git -C upstream diff | Out-File -Encoding utf8 integration.diff
-          @("contribution=$env:GITHUB_SHA","upstream=$actual","kind=experimental-proof") | Out-File -Encoding utf8 build-provenance.txt
+          @("contribution=$(git -C contribution rev-parse HEAD)","upstream=$actual","kind=experimental-proof") | Out-File -Encoding utf8 build-provenance.txt
       - name: Record baseline provenance
         if: matrix.variant == 'baseline'
         run: |
           $actual = git -C upstream rev-parse HEAD
           if ($LASTEXITCODE -ne 0 -or $actual -ne 'ba1de96c84fab3a6dde3f915d4a7fc9bb40adff1') { throw 'Unexpected baseline revision' }
-          @("contribution=$env:GITHUB_SHA","upstream=$actual","kind=baseline-proof") | Out-File -Encoding utf8 build-provenance.txt
+          @("contribution=$(git -C contribution rev-parse HEAD)","upstream=$actual","kind=baseline-proof") | Out-File -Encoding utf8 build-provenance.txt
       - name: Compile standalone Windows x64 module and run CTest
         if: matrix.variant == 'integrated'
         run: |
