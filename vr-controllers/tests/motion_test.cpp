@@ -26,4 +26,16 @@ int main(){
  l.primary=false;l.squeeze=0;step();step();r.x=.5f;assert(step().dx==4);
  // Disable motion mode for conventional stick rotation.
  Settings c;c.motionAim=false;Mapper legacy(c);s={};s.enabled=s.focused=true;s.hand[0].ready=s.hand[1].ready=true;legacy.update(s,.01f);s.hand[1].squeeze=.8f;s.hand[1].x=1;assert(legacy.update(s,.01f).dx==9);
+ // Snap-turn calibration and edge latch. No repeat or delayed turn after clutch.
+ Settings comfort;comfort.snapMode=2;Mapper snap(comfort);Sample t;t.enabled=t.focused=true;
+ auto& hand=t.hand[1];t.hand[0].ready=hand.ready=true;hand.aim.tracked=true;
+ auto tick=[&]{return snap.update(t,.01f);};
+ tick();tick();hand.x=.9f;assert(tick().dx==300);assert(tick().dx==0);
+ hand.x=-.9f;assert(tick().dx==0);hand.x=0;tick();hand.x=-.9f;assert(tick().dx==-300);
+ hand.x=0;tick();hand.squeeze=.8f;tick();hand.x=.9f;tick();hand.squeeze=0;assert(tick().dx==0);
+ hand.x=0;tick();hand.x=.9f;assert(tick().dx==300);
+ t.focused=false;assert(tick().dx==0);t.focused=true;assert(tick().dx==0);
+ Settings dead;dead.extraLookDeadzonePercent=30;Mapper quiet(dead);t={};t.enabled=t.focused=true;t.hand[0].ready=t.hand[1].ready=true;
+ quiet.update(t,.01f);t.hand[1].x=.2f;assert(quiet.update(t,.01f).dx==0);
+ t.hand[1].x=.8f;assert(quiet.update(t,.01f).dx>0);
 }
