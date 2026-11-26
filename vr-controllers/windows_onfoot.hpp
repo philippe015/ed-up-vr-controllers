@@ -10,7 +10,7 @@ Bindings azertyExample();
 // Load numeric physical scan codes from the optional INI next to the game EXE.
 Bindings loadToolBindings(const wchar_t* path, Bindings base=azertyExample());
 Settings loadAimSettings(const wchar_t* path);
-struct VisualSettings {bool hands=false,overlay=false,laser=false,haptics=false;float hapticStrength=.25f;};
+struct VisualSettings {bool hands=false,overlay=false,laser=false,haptics=false,objectLab=false;float hapticStrength=.25f;};
 VisualSettings loadVisualSettings(const wchar_t* path);
 class WindowsBridge {
  struct Impl; std::unique_ptr<Impl> p_;
