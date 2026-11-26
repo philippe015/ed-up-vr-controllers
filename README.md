@@ -14,6 +14,25 @@
 
 Fichier disponible : `ED-UP-VR-Test-Setup-v0.9.9-x64.exe`. Assistant FR/EN, installation sans administrateur dans LocalAppData, raccourcis, visualiseur simulé, diagnostic OpenXR en lecture seule, panneau de configuration (Python 3.10+ requis) et désinstallation. Le workflow compile les outils, exécute CTest et vérifie installation/désinstallation avant publication de l'artefact. Compilation Windows et tests d'installation/désinstallation réussis le 26 novembre 2026. **Cet installateur ne modifie aucune DLL du jeu et ne permet pas à lui seul de jouer en VR avec les nouvelles commandes.** Le patch complet exige encore validation du build et du conditionnement.
 
+### Comment installer : double-cliquer sur le programme
+
+1. Télécharger le ZIP ci-dessus, puis faire **Extraire tout** dans Windows.
+2. Ouvrir le dossier extrait et double-cliquer sur `ED-UP-VR-Test-Setup-v0.9.9-x64.exe`. Vérifier la provenance et l'empreinte SHA-256 fournie avant exécution. L'installateur n'est pas signé ; Windows SmartScreen peut afficher un avertissement.
+3. Choisir **Français** ou **English** dans l'assistant.
+4. Lire et accepter l'information sur la portée expérimentale des outils. Suivre les étapes de l'assistant, choisir éventuellement le raccourci bureau et cliquer sur **Installer**.
+5. Les outils sont copiés automatiquement dans `%LOCALAPPDATA%\EDUP-VR-Test-Tools`, sans droits administrateur ni modification des DLL du jeu.
+6. Cliquer sur **Terminer**, puis ouvrir **ED-UP VR Test Tools** dans le menu Démarrer.
+
+| Raccourci | Utilisation |
+|---|---|
+| Visualiseur des mains (démo simulée) | Démonstration sans jeu ni casque. |
+| Panneau de configuration | Réglages des commandes ; Python 3.10+ avec Tkinter et lanceur py requis. Choisir le dossier du jeu puis enregistrer volontairement le fichier INI. |
+| Diagnostic OpenXR | Vérification statique du runtime ; ne confirme pas la connexion physique du Quest 3. |
+| Notice d'installation et de test | Documentation locale FR/EN. |
+| Désinstaller ED-UP VR Test Tools | Retire les outils installés ; les configurations enregistrées séparément dans le jeu sont conservées. |
+
+Aucun téléchargement de dépendance ni lancement du jeu n'est effectué automatiquement par Setup. Les essais des nouvelles commandes dans Odyssey nécessitent encore le patch intégré complet. Le téléchargement des outils est gratuit.
+
 > Prototype non officiel. Aucun installateur complet validé disponible à ce jour. La compilation intégrale et les essais sur casque réel restent à confirmer.
 
 **[ACCÉDER À LA COMPILATION ET AU FUTUR ZIP DE TEST WINDOWS](https://github.com/philippe015/ed-up-vr-controllers/actions/workflows/integrated-windows.yml?query=branch%3Afeature%2Fonfoot-vr-enhanced)**
