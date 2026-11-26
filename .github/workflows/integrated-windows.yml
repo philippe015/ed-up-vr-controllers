@@ -2,7 +2,7 @@ name: Integrated ED-UP Windows proof build
 on:
   push:
     branches: [main]
-    paths: ['.github/workflows/integrated-windows.yml']
+    paths: ['.github/workflows/integrated-windows.yml', 'vr-controllers/**', 'appliquer-integration.py']
   workflow_dispatch:
 permissions:
   contents: read
