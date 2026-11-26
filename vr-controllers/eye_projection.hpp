@@ -5,7 +5,7 @@ namespace edup::vrinput::hands {
 struct Fov {float left,right,down,up;}; // OpenXR radians
 struct Line2 {Screen a,b;}; // normalized [0,1], Y down
 inline bool clipTest(float p,float q,float& lo,float& hi){
- if(p==0)return q>=0;float r=q/p;if(p<0)lo=std::max(lo,r);else hi=std::min(hi,r);return lo<=hi;
+ if(p==0)return q>=0;float r=q/p;if(p<0)lo=(std::max)(lo,r);else hi=(std::min)(hi,r);return lo<=hi;
 }
 inline bool clipUnit(Line2& s){
  if(!std::isfinite(s.a.x)||!std::isfinite(s.a.y)||!std::isfinite(s.b.x)||!std::isfinite(s.b.y))return false;
