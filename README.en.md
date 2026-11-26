@@ -4,19 +4,21 @@
 
 [Français](README.md) | **English**
 
-> Unofficial experimental prototype. No validated complete installer is currently available. Full integrated Windows build and physical headset testing remain unconfirmed.
+## Automatic Windows test-tools installer
 
-**[ACCESS THE WINDOWS BUILD AND FUTURE TEST ZIP](https://github.com/philippe015/ed-up-vr-controllers/actions/workflows/integrated-windows.yml?query=branch%3Afeature%2Fonfoot-vr-enhanced)**
-
-[Validation PR #1](https://github.com/philippe015/ed-up-vr-controllers/pull/1) · [v0.9.9 source](https://github.com/philippe015/ed-up-vr-controllers/tree/feature/onfoot-vr-enhanced) · [Technical documentation](https://github.com/philippe015/ed-up-vr-controllers/blob/feature/onfoot-vr-enhanced/vr-controllers/README.md) · [Report an issue](https://github.com/philippe015/ed-up-vr-controllers/issues)
-
-### Automatic Windows test-tools installer
+[![Download Windows x64](https://img.shields.io/badge/DOWNLOAD-WINDOWS%20x64-238636?style=for-the-badge&logo=windows)](https://github.com/philippe015/ed-up-vr-controllers/actions/runs/45866178749/artifacts/15139264119)
 
 **[DOWNLOAD TEST INSTALLER (ZIP)](https://github.com/philippe015/ed-up-vr-controllers/actions/runs/45866178749/artifacts/15139264119)** — GitHub sign-in required, expires December 10, 2026.
 
 [Open the test installer build workflow](https://github.com/philippe015/ed-up-vr-controllers/actions/workflows/windows-test-installer.yml)
 
-Planned filename: `ED-UP-VR-Test-Setup-v0.9.9-x64.exe`. English/French wizard, per-user installation under LocalAppData without elevation, shortcuts, simulated viewer, read-only OpenXR diagnostic, configuration utility (Python 3.10+ required) and uninstall. CI builds the tools, runs CTest and checks installation/uninstallation before uploading the artifact. Windows build and automated install/uninstall tests passed on November 26, 2026. **This setup does not modify game DLLs and does not by itself enable the new in-game VR controls.** Full patch build and packaging validation remain required.
+Filename: `ED-UP-VR-Test-Setup-v0.9.9-x64.exe`. English/French wizard, per-user installation under LocalAppData without elevation, shortcuts, simulated viewer, read-only OpenXR diagnostic, configuration utility (Python 3.10+ required) and uninstall. CI builds the tools, runs CTest and checks installation/uninstallation before uploading the artifact. Windows build and automated install/uninstall tests passed on November 26, 2026. **This setup does not modify game DLLs and does not by itself enable the new in-game VR controls.** Full patch build and packaging validation remain required.
+
+> Unofficial experimental prototype. No validated complete installer is currently available. Full integrated Windows build and physical headset testing remain unconfirmed.
+
+**[ACCESS THE WINDOWS BUILD AND FUTURE TEST ZIP](https://github.com/philippe015/ed-up-vr-controllers/actions/workflows/integrated-windows.yml?query=branch%3Afeature%2Fonfoot-vr-enhanced)**
+
+[Validation PR #1](https://github.com/philippe015/ed-up-vr-controllers/pull/1) · [v0.9.9 source](https://github.com/philippe015/ed-up-vr-controllers/tree/feature/onfoot-vr-enhanced) · [Technical documentation](https://github.com/philippe015/ed-up-vr-controllers/blob/feature/onfoot-vr-enhanced/vr-controllers/README.md) · [Report an issue](https://github.com/philippe015/ed-up-vr-controllers/issues)
 
 ## 1. Overview and features
 
