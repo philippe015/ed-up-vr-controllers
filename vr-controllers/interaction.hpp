@@ -7,7 +7,7 @@ struct InteractionReport {Keys pressed{};bool pointing=false;ControlMode mode=Co
 struct Cue {bool left=false,right=false;};
 inline Cue cues(const Keys& pressed){
  return {pressed[EnergyLink]||pressed[ProfileAnalyser]||pressed[Flashlight],
- pressed[Interact]||pressed[SuitTool]||pressed[Holster]||pressed[ToolMode]};
+ pressed[Interact]||pressed[SuitTool]||pressed[Holster]||pressed[ToolMode]||pressed[SelectPrimaryWeapon]||pressed[SelectSecondaryWeapon]};
 }
 class HapticLimiter {
  std::array<uint64_t,2> last_{};std::array<bool,2> seen_{};
