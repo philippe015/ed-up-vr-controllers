@@ -29,5 +29,5 @@ inline bool eyeLine(Segment line,Pose head,Pose eye,Fov f,Line2& out){
  out={project(a),project(b)};return clipUnit(out);
 }
 inline Segment segment(const Snapshot& s,unsigned hand,unsigned i){const auto& p=s.points[hand][i];return {{p[0],p[1],p[2]},{p[3],p[4],p[5]}};}
-inline bool fresh(const Snapshot& s,uint64_t now,uint64_t maxAge=100){return s.version==3 && s.controlMode<=5 && s.leftHanded<=1&&s.tick&&now>=s.tick&&now-s.tick<=maxAge;}
+inline bool fresh(const Snapshot& s,uint64_t now,uint64_t maxAge=100){return s.version==4 && s.controlMode<=5 && s.objectVisible<=1 && s.objectOwner>=-1 && s.objectOwner<=1 && s.leftHanded<=1&&s.tick&&now>=s.tick&&now-s.tick<=maxAge;}
 }
