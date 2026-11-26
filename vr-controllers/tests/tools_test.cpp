@@ -20,4 +20,14 @@ int main(){
  // Physical grip threshold is hysteretic, and locomotion is blocked in the layer.
  r.primary=false;step();l.squeeze=.8f;step();step();l.squeeze=.5f;l.y=1;assert(step().held.none());l.y=0;l.primary=true;assert(step().held[EnergyLink]);
  l.primary=false;l.squeeze=.3f;assert(step().held.none());assert(step().held.none());l.squeeze=0;step();l.y=1;assert(step().held[Forward]);
+ // Strict selection rejects simultaneous stick movement and requires a clean release.
+ Settings cfg;cfg.strictTools=true;Mapper strict(cfg);Sample q;q.enabled=q.focused=true;
+ auto& a=q.hand[0];auto& b=q.hand[1];a.ready=b.ready=true;
+ auto tick=[&]{return strict.update(q,.01f);};
+ tick();a.squeeze=.8f;tick();tick();
+ a.primary=true;b.x=.5f;assert(tick().held.none());
+ b.x=0;assert(tick().held.none());a.primary=false;tick();
+ a.primary=true;assert(tick().held[EnergyLink]);
+ b.squeeze=.8f;assert(tick().held.none());b.squeeze=0;assert(tick().held.none());
+ a.primary=false;tick();a.secondary=true;assert(tick().held[ProfileAnalyser]);
 }
