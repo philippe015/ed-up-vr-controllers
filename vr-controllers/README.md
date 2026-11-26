@@ -1,3 +1,11 @@
+# v0.9.12 — Valve Index controller profile (experimental)
+
+Adds the standard Valve Index OpenXR interaction profile alongside Touch, Touch Plus and Khronos Simple. Index uses A/B on both hands, thumbsticks, analog trigger and squeeze value, grip/aim pose and haptics. Left A/B take the logical roles of Touch X/Y; right A/B keep their normal roles. Existing handedness, tool and weapon layers remain unchanged. No system button interception, finger tracking or runtime-specific driver. Runtime binding remapping and grip thresholds may need calibration on physical hardware. Profile selection is performed by the OpenXR runtime; the configured runtime diagnostic is not a connected-controller detector.
+
+Reference: https://registry.khronos.org/OpenXR/specs/1.0-khr/html/xrspec.html (Valve Index Controller Profile). Compile-time profile tests added. The installer workflow now also compiles the full Windows input module using pinned upstream OpenXR headers; this is not a full ED-UP game build. Actual Valve Index and Quest tests remain pending. Vive wands and native Pico profiles remain future work.
+
+---
+
 # v0.9.11 — SteamVR / OpenXR diagnostics
 
 New SteamVR / OpenXR tab in the Control Center. Read-only detection of the active 64-bit OpenXR manifest (XR_RUNTIME_JSON override or HKLM registry), known SteamVR / Meta / VDXR filename conventions, manifest structure and runtime DLL presence. Unknown runtimes remain unknown; presence of a manifest is not evidence of an active XR session or connected controllers. The separate PowerShell diagnostic also reports provider and library path. No registry writes, automatic runtime switching or runtime DLL loading. Choose the runtime using SteamVR or Meta Quest Link settings, then restart the game. Current controller bindings remain Touch/Touch Plus and limited Khronos Simple Controller; Index, Vive, Pico and actual controller connectivity remain future work. Automated fixture tests added; physical SteamVR/Quest 3 validation pending.
