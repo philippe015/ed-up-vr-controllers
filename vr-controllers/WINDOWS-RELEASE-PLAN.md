@@ -1,14 +1,14 @@
-# Windows x64 experimental release plan
+# v0.9.9 — Windows x64 validation campaign
 
-Integration branch: feature/onfoot-vr-enhanced. Keep main unchanged until reviewed. No release or installer yet.
+Branch: feature/onfoot-vr-enhanced. Main and upstream remain unchanged.
 
-## Required gates
-- Complete two-hand runtime integration, handedness, turning comfort and tool improvements; review each feature and retain opt-in defaults.
-- Run portable CTest and standalone Windows CTest including two_hand_pose.
-- Reproduce the CPU performance failure on pinned upstream and integrated builds; do not weaken the test.
-- Run Integrated ED-UP Windows proof build manually on this branch; require all upstream rigs and smoke test to pass.
-- Inspect upstream packaging instructions and redistribution licenses before assembling a complete Windows x64 ZIP. Include all required matching runtime binaries, configuration, licenses, French installation and rollback guide, SHA256 checksums and commit provenance. Do not mix DLLs across builds or include game files.
-- Publish only as experimental prerelease after automated gates pass. Physical Quest 3 Link/Air Link, in-game input, tracking loss, context transitions, comfort and tool interactions remain unvalidated until tested separately.
+## Status
+Source features v0.9.3–v0.9.8 are integrated in the branch, but not yet validated. The full proof workflow now targets the preview branch as well. Two independent Windows jobs use the same upstream pin and dependency verification: baseline (unmodified upstream) and integrated (with controllers). Integrated job runs the standalone C++ module and CTest with the upstream OpenXR headers before the full build. Both jobs require all upstream rigs and smoke test to pass. Compare CPU benchmark diagnostics; do not relax thresholds. No successful run is claimed until inspected.
 
-## Current state
-Two-hand geometry and smoothing are prototypes with CTest registration, not yet connected to the runtime. No complete Windows package is ready. Existing integrated workflow is manually dispatchable; no final build requested until changes are complete.
+## Packaging gates
+- Inspect both job results and standalone/portable CTest; resolve regressions before packaging.
+- Upstream package.bat requires a clean, matching full-build receipt and exact version stamp. Do not bypass this check: use a local integration commit/tag if packaging is later approved.
+- Review redistribution licenses and launcher update behavior before assembling a Windows x64 experimental ZIP with matching DLLs, configuration, French instructions, rollback, SHA256 and provenance. No game files, no upstream signing identity.
+- Publish as experimental prerelease only after automated gates pass. Quest 3 Link/Air Link, tracking, in-game controls and comfort remain separate physical tests.
+
+No complete Windows ZIP is ready yet.
