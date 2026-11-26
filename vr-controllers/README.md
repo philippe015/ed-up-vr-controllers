@@ -1,3 +1,11 @@
+# v0.9.13 — Immersive Equipment (experimental)
+
+Optional `EquipmentGestures=1` under [Movement] (default 0); requires ToolLayer=1. Hold support grip first, wait for neutral, then position dominant hand in a virtual zone and hold its grip for 200 ms. A single short key press is generated; release both hands to neutral between gestures. Use the existing weapon/tool bindings, disabled until configured; reload uses existing Reload binding. No movement, camera motion or primary/secondary action in the selection layer. Zones are relative to headset yaw and height, not measured body position. Scale 70–130% (default 100), seated or unusual posture may require adjustment; do not reach beyond comfortable range. Loss of tracking, conflicting inputs or zone changes cancel. Existing button controls remain available.
+
+Dominant hip = secondary weapon; dominant rear shoulder = primary weapon; opposite upper/mid/lower chest = EnergyLink / ProfileAnalyser / SuitTool; dominant front chest = reload. Handedness mirrors zones. These are virtual key shortcuts, not native 3D grabbing. Radial graphical equipment menu, wrist UI and physical magazine manipulation remain unimplemented. Compilation and hardware validation pending.
+
+---
+
 # v0.9.12 — Valve Index controller profile (experimental)
 
 Adds the standard Valve Index OpenXR interaction profile alongside Touch, Touch Plus and Khronos Simple. Index uses A/B on both hands, thumbsticks, analog trigger and squeeze value, grip/aim pose and haptics. Left A/B take the logical roles of Touch X/Y; right A/B keep their normal roles. Existing handedness, tool and weapon layers remain unchanged. No system button interception, finger tracking or runtime-specific driver. Runtime binding remapping and grip thresholds may need calibration on physical hardware. Profile selection is performed by the OpenXR runtime; the configured runtime diagnostic is not a connected-controller detector.
