@@ -12,6 +12,10 @@ class ConfigTests(unittest.TestCase):
    with self.assertRaises(ValueError):c.validate(v)
  def test_legacy_example(self):
   v=c.read(Path(c.__file__).with_name('edup-vr-tools.ini'));self.assertEqual(v['Tools','EnergyLink'],4);self.assertEqual(v['Bindings','Primary'],256)
+ def test_tool_preset(self):
+  v=c.defaults();p=c.tool_preset(v);self.assertEqual(p['Tools','EnergyLink'],4);self.assertEqual(v['Tools','EnergyLink'],0)
+  v['Bindings','Jump']=4
+  with self.assertRaises(ValueError):c.tool_preset(v)
  def test_preserve_unknown(self):
   with tempfile.TemporaryDirectory() as d:
    p=Path(d)/'edup-vr-tools.ini';p.write_text('[Other]\nFoo=bar\n');c.save(p,c.defaults());self.assertIn('Foo = bar',p.read_text())
