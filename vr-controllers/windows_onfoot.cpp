@@ -41,6 +41,7 @@ Bindings loadToolBindings(const wchar_t* path,Bindings base){
 Settings loadAimSettings(const wchar_t* path){
  Settings s;
  s.motionAim=readNumber(path,L"MotionAim",L"Enabled",L"1",1)!=0;
+ s.twoHandAim=readNumber(path,L"MotionAim",L"TwoHandEnabled",L"0",1)!=0;
  s.invertY=readNumber(path,L"MotionAim",L"InvertY",L"0",1)!=0;
  const auto sensitivity=readNumber(path,L"MotionAim",L"PixelsPerDegree",L"10",30);if(!sensitivity)throw std::invalid_argument("zero aim sensitivity");
  s.aimPixelsPerDegree=float(sensitivity);
