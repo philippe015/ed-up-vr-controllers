@@ -1,3 +1,9 @@
+# v0.9.7 — Controller diagnostics (experimental)
+
+The local desktop hands viewer displays the mapper mode and handedness from the actual bridge report. Snapshot protocol v3 uses a separate EDUPHands09 channel; use matching viewer and runtime binaries. Old viewers cannot connect to the new channel. Headset wireframe rendering remains as before; mode labels are desktop only, not an in-headset wrist menu. No game-side equipment status is inferred. The local channel remains optional and nonblocking. Protocol validation rejects unknown modes and invalid handedness. Automated and Windows tests pending.
+
+---
+
 # v0.9.6 — Odyssey Tools Enhanced (experimental)
 
 The French Control Center now has a Préréglage outils button. It proposes six example keyboard bindings (3, 4, 5, H, T, M), checks conflicts with existing actions, and modifies only the form until the user explicitly saves. Match bindings in the game manually. `[Movement] StrictTools=1` optionally blocks tool selection when either stick is outside neutral or the dominant grip or triggers are held; release conflicting inputs and all selection buttons before retrying. Default 0 preserves existing behavior. Existing haptic feedback still confirms input submission only, never game-side success. EnergyLink, scanner and suit-specific tools remain manual; the module does not detect a charging port or tool state. New C++ and Python regression tests are included but not yet verified. Windows compilation and physical headset tests remain pending.
