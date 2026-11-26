@@ -114,6 +114,36 @@ jobs:
           }
           & build/smoke.exe build/d3d11.dll
           if ($LASTEXITCODE -ne 0) { throw 'Smoke test failed' }
+      - name: Stage Windows VR test binaries (not an installer)
+        if: success() && matrix.variant == 'integrated'
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $stage = 'vr-test-build'
+          New-Item -ItemType Directory -Path $stage | Out-Null
+          $files = @('d3d11.dll','edvr_openxr_graphics.dll','edvr_openxr_runtime.dll','openvr_api.dll','openxr_loader.dll','OPENXR-LOADER-LICENSE.txt','full_build_receipt.json')
+          foreach ($file in $files) {
+            $source = Join-Path 'upstream/build' $file
+            if (!(Test-Path -LiteralPath $source -PathType Leaf)) { throw "Missing test build file: $file" }
+            Copy-Item -LiteralPath $source -Destination $stage
+          }
+          Copy-Item module-build/Release/edup_hands_viewer.exe $stage
+          Copy-Item contribution/vr-controllers/edup-vr-tools.ini $stage
+          Copy-Item contribution/vr-controllers/control_center.py $stage
+          Copy-Item contribution/vr-controllers/README.md "$stage/VR-README.md"
+          Copy-Item upstream/LICENSE "$stage/ED-UP-LICENSE.txt"
+          Copy-Item contribution/vr-controllers/LICENSE "$stage/VR-LICENSE.txt"
+          Copy-Item build-provenance.txt $stage
+          Copy-Item integration.diff $stage
+          @('EXPERIMENTAL BUILD OUTPUT ONLY - NOT A COMPLETE INSTALLER.', 'Do not install or mix these files with another release.', 'Baseline comparison, dependency/license packaging and physical Quest 3 validation are separate gates.') | Set-Content "$stage/TEST-ONLY.txt"
+          Get-ChildItem -LiteralPath $stage -File | Sort-Object Name | ForEach-Object { '{0}  {1}' -f (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant(), $_.Name } | Set-Content -Encoding ascii "$stage/SHA256SUMS"
+      - name: Upload Windows x64 test build output
+        if: success() && matrix.variant == 'integrated'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: ED-UP-VR-v0.9.9-Windows-x64-test-build
+          path: vr-test-build/
+          if-no-files-found: error
+          retention-days: 14
       - name: Upload proof diagnostics (not a release or installer)
         if: always()
         uses: actions/upload-artifact@v4
