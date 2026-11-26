@@ -1,0 +1,67 @@
+name: Import verified v0.9 source archive
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/import-v09.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: import-v09
+  cancel-in-progress: false
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download and verify source archive
+        shell: bash
+        run: |
+          curl --fail --location --retry 2 --proto '=https' --proto-redir '=https' 'https://github.com/user-attachments/files/35450529/ED-UP-VR-Controllers-v0.9-Stability.zip' --output /tmp/edup-v09.zip
+          echo '66b9c2ecb96e25fa2f95ff4946be1148b9019c1c6b04e3450b32259e38391546  /tmp/edup-v09.zip' | sha256sum -c -
+          unzip -tq /tmp/edup-v09.zip
+      - name: Import source files
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import zipfile
+          from pathlib import Path, PurePosixPath
+          prefix = "ED-UP-VR-Controllers-v0.9-Stability"
+          with zipfile.ZipFile("/tmp/edup-v09.zip") as z:
+              entries = []
+              for item in z.infolist():
+                  if item.is_dir():
+                      continue
+                  p = PurePosixPath(item.filename)
+                  if p.is_absolute() or ".." in p.parts or len(p.parts) < 2 or p.parts[0] != prefix:
+                      raise ValueError(item.filename)
+                  relative = PurePosixPath(*p.parts[1:])
+                  if not (relative.parts[0] == "vr-controllers" or str(relative) in {"appliquer-integration.py", "publier-github.sh", ".github/workflows/vr-input-core.yml"}):
+                      raise ValueError(item.filename)
+                  entries.append((Path(str(relative)), z.read(item)))
+              for target, data in entries:
+                  if target.exists() and target.read_bytes() != data:
+                      raise RuntimeError(f"Refusing to overwrite {target}")
+              for target, data in entries:
+                  target.parent.mkdir(parents=True, exist_ok=True)
+                  target.write_bytes(data)
+          Path("LICENSE").write_bytes(Path("vr-controllers/LICENSE").read_bytes())
+          p = Path("README.md")
+          s = p.read_text()
+          s = s.replace("The source files have not yet been imported into this repository.", "Browse the [source code and technical documentation](vr-controllers/README.md), [Windows validation plan](vr-controllers/VALIDATION-WINDOWS.md) and [MIT license](LICENSE).")
+          p.write_text(s)
+          # Original workflow is designed for the upstream fork. Preserve its build
+          # steps, but check integration anchors against a separate upstream checkout.
+          p = Path(".github/workflows/vr-input-core.yml")
+          s = p.read_text().replace("branches: [feature/openxr-onfoot-stability]", "branches: [main]")
+          old = "      - name: Check upstream integration anchors\n        run: python appliquer-integration.py . --check"
+          new = "      - uses: actions/checkout@v4\n        with:\n          repository: characterecho-sean/ed-unofficial-patch\n          path: ed-up-upstream\n      - name: Check upstream integration anchors\n        run: python appliquer-integration.py ed-up-upstream --check"
+          if old not in s:
+              raise RuntimeError("Unexpected original workflow")
+          p.write_text(s.replace(old, new))
+          PY
+          git add vr-controllers appliquer-integration.py publier-github.sh LICENSE README.md .github/workflows/vr-input-core.yml
+          git diff --cached --stat
+          git diff --cached --quiet && exit 0
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'Import verified ED-UP VR Controllers v0.9 sources'
+          git push origin HEAD:main
