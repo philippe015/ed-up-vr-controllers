@@ -34,9 +34,9 @@ inline void drawOverlay(ID3D11Device* device,ID3D11DeviceContext* ctx,ID3D11Rend
  for(unsigned h=0;h<3;++h){if(h<2?activeOverlay->valid[h]!=1:activeOverlay->laserValid!=1)continue;unsigned n=0;
   for(unsigned i=0;i<(h<2?count:1u);++i){Line2 l;if(!eyeLine(h<2?segment(*activeOverlay,h,i):activeOverlay->laser,xrPose(head),xrPose(eye.pose),f,l))continue;
    float dx=(l.b.x-l.a.x)*width,dy=(l.b.y-l.a.y)*height;
-   unsigned steps=std::clamp(unsigned(std::ceil(std::max(std::abs(dx),std::abs(dy))/3.f)),1u,48u);
+   unsigned steps=std::clamp(unsigned(std::ceil((std::max)(std::abs(dx),std::abs(dy))/3.f)),1u,48u);
    for(unsigned k=0;k<=steps;++k){float t=float(k)/steps;LONG x=LONG(std::lround(l.a.x*(width-1)+t*(l.b.x-l.a.x)*(width-1)));LONG y=LONG(std::lround(l.a.y*(height-1)+t*(l.b.y-l.a.y)*(height-1)));
-    rects[n++]={std::max(0L,x-1),std::max(0L,y-1),std::min(LONG(width),x+2),std::min(LONG(height),y+2)};
+    rects[n++]={(std::max)(0L,x-1),(std::max)(0L,y-1),(std::min)(LONG(width),x+2),(std::min)(LONG(height),y+2)};
    }
   }
   if(n)context1->ClearView(rtv,colors[h],rects.data(),n);
