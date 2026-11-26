@@ -31,6 +31,6 @@ inline Wire make(Pose grip,Pose head,bool left,float trigger,float squeeze){
 struct Screen{float x,y;};
 // Diagnostic perspective with parallel eyes; the actual runtime eye poses/FOV must replace this in the headset renderer.
 inline bool project(Vec p,float eyeX,float tanHalfFov,Screen& s){if(!finite(p)||!std::isfinite(eyeX)||!std::isfinite(tanHalfFov)||tanHalfFov<=0||p.z>=-.04f)return false;float z=-p.z;s={(p.x-eyeX)/(z*tanHalfFov),p.y/(z*tanHalfFov)};return std::isfinite(s.x)&&std::isfinite(s.y);}
-struct Snapshot {uint32_t version=2;uint32_t valid[2]{};uint64_t tick=0;float points[2][count][6]{};uint32_t laserValid=0;Segment laser{};};
+struct Snapshot {uint32_t version=3;uint32_t valid[2]{};uint64_t tick=0;float points[2][count][6]{};uint32_t laserValid=0;Segment laser{};uint32_t controlMode=0, leftHanded=0;};
 inline void set(Snapshot& s,unsigned h,const Wire& w){if(h>=2)return;s.valid[h]=w.valid?1u:0u;for(unsigned i=0;i<count;++i){auto a=w.lines[i].a,b=w.lines[i].b;auto& p=s.points[h][i];p[0]=a.x;p[1]=a.y;p[2]=a.z;p[3]=b.x;p[4]=b.y;p[5]=b.z;}}
 }
