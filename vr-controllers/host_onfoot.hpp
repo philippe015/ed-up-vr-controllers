@@ -61,7 +61,9 @@ public:
   f10WasDown_=down;
   if(!mode_){clearHands();return;}
   if(core_.poll(true,base,t)!=XR_SUCCESS){suspend();return;}
-  const auto report=bridge_->submit(fromCore(core_,true,true));
+  auto sample=fromCore(core_,true,true);XrPosef head{};
+  if(core_.locateHead(view,base,t,head)){sample.head=convert(head);sample.headTracked=true;}
+  const auto report=bridge_->submit(sample);
   if(hapticsEnabled_&&hapticStrength_>0&&foregroundGame()){const auto cue=cues(report.pressed);const auto now=GetTickCount64();
    const unsigned support=leftHanded_?1:0, dominant=leftHanded_?0:1;
    if(cue.left&&hapticLimiter_.permit(support,now))core_.pulse(support,hapticStrength_);
