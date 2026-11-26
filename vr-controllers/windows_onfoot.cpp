@@ -62,6 +62,7 @@ VisualSettings loadVisualSettings(const wchar_t* path){
  VisualSettings v;
  auto flag=[&](const wchar_t* key,const wchar_t* env){wchar_t e[4]{};auto n=GetEnvironmentVariableW(env,e,4);if(n==1&&(e[0]==L'0'||e[0]==L'1'))return e[0]==L'1';return readNumber(path,L"Visual",key,L"0",1)!=0;};
  v.hands=flag(L"Hands",L"EDUP_VR_HANDS");v.overlay=flag(L"Overlay",L"EDUP_VR_OVERLAY");v.laser=flag(L"Laser",L"EDUP_VR_LASER");v.haptics=flag(L"Haptics",L"EDUP_VR_HAPTICS");
+ v.objectLab=readNumber(path,L"Visual",L"ObjectLab",L"0",1)!=0;
  v.hapticStrength=readNumber(path,L"Visual",L"HapticPercent",L"25",100)/100.f;return v;
 }
 struct WindowsBridge::Impl {
