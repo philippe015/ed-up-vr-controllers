@@ -64,7 +64,7 @@ jobs:
       - name: Verify silent install and uninstall in isolated runner directory
         run: |
           $ErrorActionPreference = 'Stop'
-          $setup = (Resolve-Path 'vr-controllers/installer/output/ED-UP-VR-Test-Setup-v0.9.9-x64.exe').Path
+          $setup = (Resolve-Path 'vr-controllers/installer/output/ED-UP-VR-Test-Setup-v0.9.10-x64.exe').Path
           $target = Join-Path $env:RUNNER_TEMP 'EDUP-VR-Test-Tools'
           if (Test-Path -LiteralPath $target) { throw 'Test directory already exists' }
           $p = Start-Process -FilePath $setup -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/LANG=english',('/DIR="' + $target + '"'),('/LOG="' + $env:RUNNER_TEMP + '\edup-setup.log"')) -Wait -PassThru
@@ -83,9 +83,9 @@ jobs:
       - name: Upload validated diagnostic installer
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
-          name: ED-UP-VR-Test-Setup-v0.9.9-x64
+          name: ED-UP-VR-Test-Setup-v0.9.10-x64
           path: |
-            vr-controllers/installer/output/ED-UP-VR-Test-Setup-v0.9.9-x64.exe
+            vr-controllers/installer/output/ED-UP-VR-Test-Setup-v0.9.10-x64.exe
             vr-controllers/installer/output/SHA256SUMS
           if-no-files-found: error
           retention-days: 14
