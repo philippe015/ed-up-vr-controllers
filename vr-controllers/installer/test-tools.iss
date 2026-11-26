@@ -1,4 +1,4 @@
-#define AppVersion "0.9.11"
+#define AppVersion "0.9.12"
 [Setup]
 AppId=EDUP-VR-TEST-TOOLS-Philou
 AppName=ED-UP VR Test Tools
@@ -12,7 +12,7 @@ PrivilegesRequired=lowest
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 OutputDir=output
-OutputBaseFilename=ED-UP-VR-Test-Setup-v0.9.11-x64
+OutputBaseFilename=ED-UP-VR-Test-Setup-v0.9.12-x64
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
