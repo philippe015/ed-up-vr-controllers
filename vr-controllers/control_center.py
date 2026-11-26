@@ -1,5 +1,6 @@
 """ED-UP VR Control Center — local configuration only, no game input."""
 import configparser
+import json
 import os
 from pathlib import Path
 import shutil
@@ -74,10 +75,47 @@ def save(path,values):
  finally:
   if os.path.exists(tmp): os.unlink(tmp)
 
+def runtime_family(manifest, library=''):
+ # Identify known filename conventions only; do not infer headset connectivity.
+ names=[str(x).replace('\\','/').rsplit('/',1)[-1].lower() for x in (manifest,library)]
+ if any(n in ('steamxr_win64.json','vrclient_x64.dll','vrclient.dll') for n in names): return 'SteamVR'
+ if any(n in ('oculus_openxr_64.json','oculus_openxr_32.json','oculus_openxr_64.dll','oculus_openxr_32.dll') for n in names): return 'Meta / Oculus'
+ if any(n in ('virtualdesktop-openxr.json','vdxr.json','vdxr.dll') for n in names): return 'Virtual Desktop / VDXR'
+ return 'Autre / inconnu'
+
+def inspect_runtime(manifest, source):
+ report={'source':source,'manifest':str(manifest or ''),'provider':'Non détecté','manifest_ok':False,'library_ok':False,'library':'','error':''}
+ if not manifest: return report
+ report['provider']=runtime_family(manifest)
+ try:
+  p=Path(manifest)
+  with p.open('r',encoding='utf-8-sig') as f: data=json.loads(f.read(1024*1024+1))
+  lib=data['runtime']['library_path']
+  if not isinstance(lib,str) or not lib.strip() or not isinstance(data.get('file_format_version'),str): raise ValueError('Manifest OpenXR invalide')
+  report['manifest_ok']=True
+  report['provider']=runtime_family(manifest,lib)
+  target=Path(lib)
+  if not target.is_absolute(): target=p.parent/target
+  report['library']=str(target);report['library_ok']=target.is_file()
+ except (OSError,ValueError,KeyError,TypeError) as e:report['error']=str(e)
+ return report
+
+def active_runtime():
+ override=os.environ.get('XR_RUNTIME_JSON')
+ if override:return inspect_runtime(override,'XR_RUNTIME_JSON')
+ if os.name!='nt':return inspect_runtime(None,'Windows uniquement')
+ import winreg
+ try:
+  with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,r'SOFTWARE\Khronos\OpenXR\1',0,winreg.KEY_READ|winreg.KEY_WOW64_64KEY) as k:
+   value,_=winreg.QueryValueEx(k,'ActiveRuntime')
+  return inspect_runtime(value,'HKLM 64 bits')
+ except OSError as e:
+  report=inspect_runtime(None,'HKLM 64 bits');report['error']=str(e);return report
+
 def main():
  import tkinter as tk
  from tkinter import ttk,filedialog,messagebox
- root=tk.Tk();root.title('ED-UP VR Control Center v0.9.10 — Philou Cyberpunk');root.geometry('840x760');root.minsize(720,640)
+ root=tk.Tk();root.title('ED-UP VR Control Center v0.9.11 — Philou Cyberpunk');root.geometry('840x760');root.minsize(720,640)
  style=ttk.Style(root);style.theme_use('clam');style.configure('Header.TLabel',font=('Segoe UI',18,'bold'));style.configure('TButton',padding=6)
  body=ttk.Frame(root,padding=16);body.pack(fill='both',expand=True)
  ttk.Label(body,text='ED-UP VR CONTROL CENTER',style='Header.TLabel').pack(anchor='w');ttk.Label(body,text='Odyssey à pied • Meta Quest 3 • OpenXR • Configuration locale').pack(anchor='w',pady=(0,12))
@@ -100,6 +138,16 @@ def main():
   else:
    ttk.Label(pane,text=t).grid(row=i,column=0,sticky='w',pady=5);ttk.Spinbox(pane,from_=lo,to=hi,textvariable=var,width=10).grid(row=i,column=1,sticky='w')
  diag=ttk.Frame(tabs,padding=14);tabs.add(diag,text='Diagnostic / aide');result=tk.StringVar(value='Aucun dossier sélectionné.');ttk.Label(diag,textvariable=result,wraplength=680,justify='left').pack(anchor='w',pady=(0,12));ttk.Label(diag,text='Ce panneau ne communique pas directement avec le casque.\nPour calibrer : en jeu à pied, F10 puis contrôleurs au neutre ;\nmaintenir le grip dominant pour recaler la visée relative.\nPour deux mains : grip dominant, puis grip non dominant.\nFermer le jeu avant de modifier le fichier. Redémarrage obligatoire.\nEDUP_VR_ONFOOT=1 reste nécessaire dans l’environnement du jeu.\nLes variables EDUP_VR_HANDS/OVERLAY/LASER/HAPTICS à 0 ou 1\nont priorité sur les choix de ce panneau.',justify='left').pack(anchor='w')
+ runtime_tab=ttk.Frame(tabs,padding=14);tabs.add(runtime_tab,text='SteamVR / OpenXR')
+ runtime_text=tk.StringVar(value='Cliquez sur Détecter le runtime.')
+ ttk.Label(runtime_tab,textvariable=runtime_text,wraplength=680,justify='left').pack(anchor='w',pady=(0,12))
+ def refresh_runtime():
+  try:
+   r=active_runtime()
+   runtime_text.set('Runtime : '+r['provider']+'\nSource : '+r['source']+'\nManifest : '+(r['manifest'] or 'absent')+'\nManifest valide : '+('oui' if r['manifest_ok'] else 'non')+'\nBibliothèque : '+(r['library'] or 'inconnue')+'\nFichier présent : '+('oui' if r['library_ok'] else 'non')+('\nErreur : '+r['error'] if r['error'] else ''))
+  except Exception as e:runtime_text.set('Diagnostic indisponible : '+str(e))
+ ttk.Button(runtime_tab,text='Détecter le runtime',command=refresh_runtime).pack(anchor='w',pady=8)
+ ttk.Label(runtime_tab,text='SteamVR : ouvrir ses paramètres OpenXR et choisir SteamVR comme runtime si souhaité.\nMeta : utiliser les réglages OpenXR de Meta Quest Link.\nRelancer le jeu après changement. Aucun changement automatique.\nLe diagnostic ne démarre pas une session XR et ne valide pas les manettes.',wraplength=680,justify='left').pack(anchor='w')
  def apply(values):
   for s,k,_,_ in ACTIONS:
    val=label(values[s,k]);c=comboboxes[s,k];choices=list(c['values']);
