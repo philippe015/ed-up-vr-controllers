@@ -115,10 +115,10 @@ def active_runtime():
 def main():
  import tkinter as tk
  from tkinter import ttk,filedialog,messagebox
- root=tk.Tk();root.title('ED-UP VR Control Center v0.9.11 — Philou Cyberpunk');root.geometry('840x760');root.minsize(720,640)
+ root=tk.Tk();root.title('ED-UP VR Control Center v0.9.12 — Philou Cyberpunk');root.geometry('840x760');root.minsize(720,640)
  style=ttk.Style(root);style.theme_use('clam');style.configure('Header.TLabel',font=('Segoe UI',18,'bold'));style.configure('TButton',padding=6)
  body=ttk.Frame(root,padding=16);body.pack(fill='both',expand=True)
- ttk.Label(body,text='ED-UP VR CONTROL CENTER',style='Header.TLabel').pack(anchor='w');ttk.Label(body,text='Odyssey à pied • Meta Quest 3 • OpenXR • Configuration locale').pack(anchor='w',pady=(0,12))
+ ttk.Label(body,text='ED-UP VR CONTROL CENTER',style='Header.TLabel').pack(anchor='w');ttk.Label(body,text='Odyssey à pied • Quest / Valve Index • OpenXR • Configuration locale').pack(anchor='w',pady=(0,12))
  path=tk.StringVar(value='');status=tk.StringVar(value='Sélectionnez le dossier du jeu. Aucun fichier modifié.');row=ttk.Frame(body);row.pack(fill='x');ttk.Entry(row,textvariable=path,state='readonly').pack(side='left',fill='x',expand=True)
  tabs=ttk.Notebook(body);tabs.pack(fill='both',expand=True,pady=12);vars={}; comboboxes={}
  for title,section in [('Déplacements / actions','Bindings'),('Outils / combinaison','Tools'),('Armes','Weapons')]:
