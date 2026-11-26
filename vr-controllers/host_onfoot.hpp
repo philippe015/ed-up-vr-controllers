@@ -20,10 +20,11 @@ class HostOnFoot {
  hands::Snapshot overlay_{};XrTime overlayTime_=0;
  void clearHands(){overlay_={};overlayTime_=0;if(handsEnabled_)handsChannel_.write(hands::Snapshot{});}
  static hands::Pose convert(const XrPosef& p){return {{p.position.x,p.position.y,p.position.z},{p.orientation.x,p.orientation.y,p.orientation.z,p.orientation.w}};}
- void publishHands(XrSpace view,XrSpace base,XrTime t,bool pointing){
+ void publishHands(XrSpace view,XrSpace base,XrTime t,const InteractionReport& report){
   if(!handsEnabled_&&!overlayEnabled_)return;hands::Snapshot out;XrPosef head{};
   if(core_.locateHead(view,base,t,head))for(unsigned i=0;i<2;++i){const auto& h=core_.hands()[i];if(h.tracked&&h.ready)hands::set(out,i,hands::make(convert(h.grip),convert(head),i==0,h.trigger,h.squeeze));}
-  if(laserEnabled_&&pointing&&out.valid[0]&&out.valid[1]&&pointerRay(convert(core_.hands()[leftHanded_?0:1].aim),convert(head),out.laser))out.laserValid=1;
+  out.controlMode=static_cast<uint32_t>(report.mode);out.leftHanded=leftHanded_?1u:0u;
+  if(laserEnabled_&&report.pointing&&out.valid[0]&&out.valid[1]&&pointerRay(convert(core_.hands()[leftHanded_?0:1].aim),convert(head),out.laser))out.laserValid=1;
   out.tick=GetTickCount64();
   if(overlayEnabled_){overlay_=out;overlayTime_=t;}
   if(handsEnabled_)handsChannel_.write(out);
@@ -66,7 +67,7 @@ public:
    if(cue.left&&hapticLimiter_.permit(support,now))core_.pulse(support,hapticStrength_);
    if(cue.right&&hapticLimiter_.permit(dominant,now))core_.pulse(dominant,hapticStrength_);
   }
-  publishHands(view,base,t,report.pointing);
+  publishHands(view,base,t,report);
  }
  const hands::Snapshot* overlay(XrTime t,bool eligible,bool focused) const {
   return overlayEnabled_&&mode_&&eligible&&focused&&foregroundGame()&&overlayTime_==t&&hands::fresh(overlay_,GetTickCount64())?&overlay_:nullptr;
