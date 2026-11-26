@@ -1,3 +1,9 @@
+# v0.9.11 — SteamVR / OpenXR diagnostics
+
+New SteamVR / OpenXR tab in the Control Center. Read-only detection of the active 64-bit OpenXR manifest (XR_RUNTIME_JSON override or HKLM registry), known SteamVR / Meta / VDXR filename conventions, manifest structure and runtime DLL presence. Unknown runtimes remain unknown; presence of a manifest is not evidence of an active XR session or connected controllers. The separate PowerShell diagnostic also reports provider and library path. No registry writes, automatic runtime switching or runtime DLL loading. Choose the runtime using SteamVR or Meta Quest Link settings, then restart the game. Current controller bindings remain Touch/Touch Plus and limited Khronos Simple Controller; Index, Vive, Pico and actual controller connectivity remain future work. Automated fixture tests added; physical SteamVR/Quest 3 validation pending.
+
+---
+
 # v0.9.10 — Manual weapon selection (experimental)
 
 Optional `[Movement] WeaponSelect=1` (default 0, requires ToolLayer=1). Configure `[Weapons] SelectPrimaryWeapon=0x02` and `SelectSecondaryWeapon=0x03` (physical number row 1 and 2 examples), or choose keys in the new Armes tab of the French Control Center. Bind the matching actions in the game's on-foot controls; 0 disables either binding. Existing bindings remain unchanged.
