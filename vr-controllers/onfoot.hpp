@@ -7,15 +7,16 @@
 #include "safety.hpp"
 #include "stability.hpp"
 #include "motion_aim.hpp"
+#include "two_hand_pose.h"
 namespace edup::vrinput::foot {
 enum Action {Forward, Back, Left, Right, Jump, Interact, Crouch, Sprint, CycleTool, Reload, Primary, Secondary, EnergyLink, ProfileAnalyser, SuitTool, Holster, Flashlight, ToolMode, Count};
 using Keys=std::bitset<Count>;
-struct Hand {bool ready=false, primary=false, secondary=false, stickClick=false; float x=0,y=0,trigger=0,squeeze=0; Orientation aim{};};
+struct Hand {bool ready=false, primary=false, secondary=false, stickClick=false; float x=0,y=0,trigger=0,squeeze=0; Orientation aim{}; edup::experimental::Vec3 gripPosition{}; bool gripTracked=false;};
 struct Sample {std::array<Hand,2> hand{}; bool enabled=false, focused=false;};
 struct Output {Keys held{}; int dx=0,dy=0; bool pointing=false;};
-struct Settings {float moveOn=.55f,moveOff=.35f,triggerOn=.65f,triggerOff=.40f; float lookPixelsPerSecond=900.f; bool invertY=false; bool toolLayer=true; bool motionAim=true; float aimPixelsPerDegree=10.f;};
+struct Settings {float moveOn=.55f,moveOff=.35f,triggerOn=.65f,triggerOff=.40f; float lookPixelsPerSecond=900.f; bool invertY=false; bool toolLayer=true; bool motionAim=true; float aimPixelsPerDegree=10.f; bool twoHandAim=false;};
 class Mapper {
- Settings cfg_; Keys held_; bool armed_=false, tools_=false, layerReady_=false, chordBlocked_=false; float remX_=0,remY_=0; MotionAim motion_; bool clutch_=false;
+ Settings cfg_; Keys held_; bool armed_=false, tools_=false, layerReady_=false, chordBlocked_=false; float remX_=0,remY_=0; MotionAim motion_; bool clutch_=false; edup::experimental::TwoHandFilter twoFilter_; MotionAim twoMotion_; bool twoActive_=false; double twoTime_=0;
  bool hysteresis(Action a,float value,float on,float off) const {return value>=(held_[a]?off:on);}
  static bool valid(const Hand& h){return h.ready&&analogValid(h.x,-1.f,1.f)&&analogValid(h.y,-1.f,1.f)&&analogValid(h.trigger,0.f,1.f)&&analogValid(h.squeeze,0.f,1.f);}
  static bool neutral(const Hand& h){return std::abs(h.x)<.10f&&std::abs(h.y)<.10f&&h.trigger<.05f&&h.squeeze<.05f&&!h.primary&&!h.secondary&&!h.stickClick;}
@@ -27,11 +28,31 @@ public:
   cfg_.lookPixelsPerSecond=std::clamp(safe(cfg_.lookPixelsPerSecond,900.f),0.f,3000.f);
   cfg_.aimPixelsPerDegree=std::clamp(safe(cfg_.aimPixelsPerDegree,10.f),1.f,30.f);
  }
- Output reset(){held_.reset();armed_=false;tools_=layerReady_=chordBlocked_=false;remX_=remY_=0;motion_.reset();clutch_=false;return {};}
+ Output reset(){held_.reset();armed_=false;tools_=layerReady_=chordBlocked_=false;remX_=remY_=0;motion_.reset();clutch_=false;twoFilter_.reset();twoMotion_.reset();twoActive_=false;twoTime_=0;return {};}
  Output update(const Sample& s,float dt){
   const auto& l=s.hand[0];const auto& r=s.hand[1];
   if(!s.enabled||!s.focused||!valid(l)||!valid(r)||!std::isfinite(dt)||dt<0||dt>.1f)return reset();
   if(!armed_){armed_=neutral(l)&&neutral(r);layerReady_=armed_;return {};}
+  // Experimental mode: right grip first, then left. Left grip alone still selects tools.
+  if(twoActive_ || (cfg_.twoHandAim && cfg_.motionAim && !tools_ && layerReady_ && clutch_ && r.squeeze>=.70f && l.squeeze>=.70f)){
+   if(!twoActive_){
+    twoActive_=true;twoTime_=0;twoFilter_.reset();twoMotion_.reset();
+    twoFilter_.update(r.gripPosition,l.gripPosition,r.gripTracked,l.gripTracked,true,false,0);
+   }
+   if(l.squeeze<.40f || r.squeeze<.40f || dt<=0 || l.trigger>=.05f || r.trigger>=.05f || l.primary || l.secondary || r.primary || r.secondary || l.stickClick || r.stickClick)return reset();
+   twoTime_+=dt;
+   auto pose=twoFilter_.update(r.gripPosition,l.gripPosition,r.gripTracked,l.gripTracked,true,true,twoTime_);
+   if(!pose.valid)return reset();
+   const auto v=pose.direction;
+   const double horizontal=std::hypot(v.x,v.z);
+   if(horizontal<.17)return reset();
+   const double yaw=-std::atan2(v.x,-v.z)/2, pitch=std::atan2(v.y,horizontal)/2;
+   Orientation q{float(std::cos(yaw)*std::sin(pitch)),float(std::sin(yaw)*std::cos(pitch)),float(-std::sin(yaw)*std::sin(pitch)),float(std::cos(yaw)*std::cos(pitch)),true};
+   auto aim=twoMotion_.update(true,q,cfg_.aimPixelsPerDegree,cfg_.invertY,dt);
+   if(!aim.usable)return reset();
+   held_.reset();remX_=remY_=0;
+   Output out;out.dx=aim.dx;out.dy=aim.dy;return out;
+  }
   // Left grip is a physical modifier, not a game action. Hysteresis prevents chatter.
   const bool nextTools=cfg_.toolLayer && l.squeeze>=(tools_?.40f:.70f);
   if(nextTools!=tools_){tools_=nextTools;layerReady_=false;chordBlocked_=false;held_.reset();remX_=remY_=0;motion_.reset();clutch_=false;return {};}
