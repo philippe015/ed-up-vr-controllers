@@ -45,6 +45,10 @@ Sélection directe expérimentale : maintenir le grip de soutien, puis pousser l
 
 [Notes techniques v0.9.10](https://github.com/philippe015/ed-up-vr-controllers/blob/feature/onfoot-vr-enhanced/vr-controllers/README.md)
 
+### v0.9.11 — SteamVR et OpenXR (en validation)
+
+Nouvel onglet SteamVR / OpenXR : détection en lecture seule du runtime configuré, identification indicative SteamVR, Meta ou VDXR, contrôle du manifeste et de la présence de sa DLL. Le choix du runtime reste dans les paramètres du logiciel VR. Pas de détection physique des manettes ni validation en jeu à ce stade. Les profils Index, Vive et Pico restent à développer. Le téléchargement v0.9.10 reste la version vérifiée en attendant les résultats.
+
 ## 1. Présentation et possibilités
 
 Le projet complète [ED Unofficial Patch](https://github.com/characterecho-sean/ed-unofficial-patch) par des commandes de manettes VR pour le mode à pied d'Odyssey. Les fonctions suivantes sont présentes dans les sources expérimentales, mais leur fonctionnement dans le jeu et le casque doit être validé.
