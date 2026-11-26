@@ -27,7 +27,7 @@ public:
   cfg_.moveOn=std::clamp(safe(cfg_.moveOn,.55f),.15f,1.f);cfg_.moveOff=std::clamp(safe(cfg_.moveOff,.35f),.10f,cfg_.moveOn);
   cfg_.triggerOn=std::clamp(safe(cfg_.triggerOn,.65f),.15f,1.f);cfg_.triggerOff=std::clamp(safe(cfg_.triggerOff,.40f),.05f,cfg_.triggerOn);
   cfg_.lookPixelsPerSecond=std::clamp(safe(cfg_.lookPixelsPerSecond,900.f),0.f,3000.f);
-  cfg_.snapMode=std::min(cfg_.snapMode,3u);cfg_.snapPixelsPerDegree=std::clamp(cfg_.snapPixelsPerDegree,1u,30u);cfg_.extraLookDeadzonePercent=std::min(cfg_.extraLookDeadzonePercent,40u);
+  cfg_.snapMode=(std::min)(cfg_.snapMode,3u);cfg_.snapPixelsPerDegree=std::clamp(cfg_.snapPixelsPerDegree,1u,30u);cfg_.extraLookDeadzonePercent=(std::min)(cfg_.extraLookDeadzonePercent,40u);
   cfg_.aimPixelsPerDegree=std::clamp(safe(cfg_.aimPixelsPerDegree,10.f),1.f,30.f);
  }
  Output reset(){held_.reset();armed_=false;tools_=layerReady_=chordBlocked_=false;remX_=remY_=0;motion_.reset();clutch_=false;twoFilter_.reset();twoMotion_.reset();twoActive_=false;twoTime_=0;snapReady_=false;weaponBusy_=weaponConsumed_=false;return {};}
@@ -108,7 +108,7 @@ public:
   }
   // InputCore already applies its stick deadzone. Fractional pixels preserve slow motion.
   const float dead=cfg_.extraLookDeadzonePercent/100.f;
-  auto axis=[dead](float v){return std::copysign(std::max(0.f,(std::abs(v)-dead)/(1.f-dead)),v);};
+  auto axis=[dead](float v){return std::copysign((std::max)(0.f,(std::abs(v)-dead)/(1.f-dead)),v);};
   const float x=axis(r.x),y=axis(r.y);
   if(cfg_.snapMode){
    // One calibrated relative mouse pulse per neutral-to-edge gesture.
