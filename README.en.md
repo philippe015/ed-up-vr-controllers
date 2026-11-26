@@ -14,6 +14,25 @@
 
 Filename: `ED-UP-VR-Test-Setup-v0.9.9-x64.exe`. English/French wizard, per-user installation under LocalAppData without elevation, shortcuts, simulated viewer, read-only OpenXR diagnostic, configuration utility (Python 3.10+ required) and uninstall. CI builds the tools, runs CTest and checks installation/uninstallation before uploading the artifact. Windows build and automated install/uninstall tests passed on November 26, 2026. **This setup does not modify game DLLs and does not by itself enable the new in-game VR controls.** Full patch build and packaging validation remain required.
 
+### How to install: double-click the setup file
+
+1. Download the ZIP above and select **Extract All** in Windows.
+2. Open the extracted directory and double-click `ED-UP-VR-Test-Setup-v0.9.9-x64.exe`. Verify its origin and supplied SHA-256 checksum before running. The setup is unsigned; Windows SmartScreen may display a warning.
+3. Select **English** or **Français** in the setup wizard.
+4. Read and accept the experimental scope notice. Follow the wizard, optionally select the desktop shortcut, then click **Install**.
+5. Setup automatically copies the tools to `%LOCALAPPDATA%\EDUP-VR-Test-Tools` without administrator privileges or changes to game DLLs.
+6. Click **Finish**, then open **ED-UP VR Test Tools** in the Windows Start menu.
+
+| Shortcut | Purpose |
+|---|---|
+| Hands viewer (simulated demo) | Demonstration without the game or headset. |
+| Control Center (French interface) | Configure controls; requires Python 3.10+ with Tkinter and the py launcher. Select the game directory and explicitly save the INI file. |
+| Read-only OpenXR diagnostic | Static runtime check; does not confirm physical Quest 3 connectivity. |
+| Installation and test guide | Local FR/EN documentation. |
+| Uninstall ED-UP VR Test Tools | Removes installed tools; separately saved game configuration is retained. |
+
+Setup does not automatically download dependencies or launch the game. Testing the new controls in Odyssey still requires the full integrated patch. The tools are free to download.
+
 > Unofficial experimental prototype. No validated complete installer is currently available. Full integrated Windows build and physical headset testing remain unconfirmed.
 
 **[ACCESS THE WINDOWS BUILD AND FUTURE TEST ZIP](https://github.com/philippe015/ed-up-vr-controllers/actions/workflows/integrated-windows.yml?query=branch%3Afeature%2Fonfoot-vr-enhanced)**
