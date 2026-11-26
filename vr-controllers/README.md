@@ -1,3 +1,9 @@
+# v0.9.4 — Dual Hand Profile (experimental)
+
+New `[Movement] LeftHanded=1` mirrors all logical controller roles (default 0). Left-handed mode: left stick looks, right stick moves; left grip aims and right grip selects tools. For two-hand mode hold dominant grip first, then support grip. Laser and haptic channels follow the selected roles. Physical hand rendering remains unchanged. The French Control Center exposes LeftHanded and TwoHandEnabled. Restart the game after changes. Two-hand mode remains opt-in; no firing or walking in that mode. Tests cover mirrored movement, two-hand aim and tool selection. Compilation and headset testing pending.
+
+---
+
 # v0.9.3 — Experimental two-hand motion integration
 
 Option `[MotionAim] TwoHandEnabled=1` (default 0; requires Enabled=1). From neutral, hold right grip first to enter normal motion aim, then hold left grip to enter two-hand mode. Left grip alone retains tool selection. While both grips are held, only relative camera rotation is emitted; ordinary actions including firing and movement are suppressed. Release both controllers to neutral to resume. Tracking loss, invalid geometry, button/trigger activation or discontinuity resets the mapper. The single-hand laser is intentionally not displayed in two-hand mode. No independent 3D weapon control, no automatic targeting. Experimental right-dominant mode only. Windows build and physical tests pending.
