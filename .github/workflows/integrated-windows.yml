@@ -1,7 +1,7 @@
 name: Integrated ED-UP Windows proof build
 on:
   push:
-    branches: [main]
+    branches: [main, feature/onfoot-vr-enhanced]
     paths: ['.github/workflows/integrated-windows.yml', 'vr-controllers/**', 'appliquer-integration.py']
   workflow_dispatch:
 permissions:
@@ -11,6 +11,10 @@ concurrency:
   cancel-in-progress: false
 jobs:
   integrated:
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [baseline, integrated]
     runs-on: windows-2022
     timeout-minutes: 90
     defaults:
@@ -32,6 +36,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Apply experimental integration and record diff
+        if: matrix.variant == 'integrated'
         run: |
           $ErrorActionPreference = 'Stop'
           $actual = git -C upstream rev-parse HEAD
@@ -49,6 +54,21 @@ jobs:
           if ($LASTEXITCODE -ne 0 -or (Compare-Object $changed $expected)) { throw 'Unexpected tracked modifications' }
           git -C upstream diff | Out-File -Encoding utf8 integration.diff
           @("contribution=$env:GITHUB_SHA","upstream=$actual","kind=experimental-proof") | Out-File -Encoding utf8 build-provenance.txt
+      - name: Record baseline provenance
+        if: matrix.variant == 'baseline'
+        run: |
+          $actual = git -C upstream rev-parse HEAD
+          if ($LASTEXITCODE -ne 0 -or $actual -ne 'ba1de96c84fab3a6dde3f915d4a7fc9bb40adff1') { throw 'Unexpected baseline revision' }
+          @("contribution=$env:GITHUB_SHA","upstream=$actual","kind=baseline-proof") | Out-File -Encoding utf8 build-provenance.txt
+      - name: Compile standalone Windows x64 module and run CTest
+        if: matrix.variant == 'integrated'
+        run: |
+          cmake -S contribution/vr-controllers -B module-build -A x64 "-DOPENXR_INCLUDE_DIR=$env:GITHUB_WORKSPACE/upstream/third_party/openxr/include"
+          if ($LASTEXITCODE -ne 0) { throw 'Module configure failed' }
+          cmake --build module-build --config Release
+          if ($LASTEXITCODE -ne 0) { throw 'Module build failed' }
+          ctest --test-dir module-build -C Release --output-on-failure
+          if ($LASTEXITCODE -ne 0) { throw 'Module tests failed' }
       - name: Install upstream hash-pinned requirements
         working-directory: upstream
         run: |
@@ -98,9 +118,11 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: integration-proof-diagnostics
+          name: integration-proof-${{ matrix.variant }}-diagnostics
           path: |
             integration.diff
             build-provenance.txt
             upstream/build/**/*.log
+            upstream/build/full_build_receipt.json
+            module-build/Testing/Temporary/LastTest.log
           if-no-files-found: warn
