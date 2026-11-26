@@ -26,12 +26,12 @@ static unsigned readNumber(const wchar_t* path,const wchar_t* section,const wcha
  if(errno||end==v||*end||value>max)throw std::invalid_argument("invalid setting");return static_cast<unsigned>(value);
 }
 Bindings loadToolBindings(const wchar_t* path,Bindings base){
- const wchar_t* names[]={L"Forward",L"Back",L"Left",L"Right",L"Jump",L"Interact",L"Crouch",L"Sprint",L"CycleTool",L"Reload",L"Primary",L"Secondary",L"EnergyLink",L"ProfileAnalyser",L"SuitTool",L"Holster",L"Flashlight",L"ToolMode"};
+ const wchar_t* names[]={L"Forward",L"Back",L"Left",L"Right",L"Jump",L"Interact",L"Crouch",L"Sprint",L"CycleTool",L"Reload",L"Primary",L"Secondary",L"EnergyLink",L"ProfileAnalyser",L"SuitTool",L"Holster",L"Flashlight",L"ToolMode",L"SelectPrimaryWeapon",L"SelectSecondaryWeapon"};
  static_assert(sizeof(names)/sizeof(*names)==Count);
  for(unsigned i=0;i<Count;++i){
-  const bool tool=i>=EnergyLink;const auto& k=base[i];unsigned old=k.kind==Binding::MouseLeft?256:k.kind==Binding::MouseRight?257:k.kind==Binding::Keyboard?k.scan:0;
+  const bool tool=i>=EnergyLink; const bool weapon=i>=SelectPrimaryWeapon;const auto& k=base[i];unsigned old=k.kind==Binding::MouseLeft?256:k.kind==Binding::MouseRight?257:k.kind==Binding::Keyboard?k.scan:0;
   wchar_t def[16]{};std::swprintf(def,16,L"0x%X",old);
-  const unsigned v=readNumber(path,tool?L"Tools":L"Bindings",names[i],def,257,0);
+  const unsigned v=readNumber(path,weapon?L"Weapons":tool?L"Tools":L"Bindings",names[i],def,257,0);
   if(v==256||v==257){if(tool)throw std::invalid_argument("tool must use keyboard");base[i]={0,false,v==256?Binding::MouseLeft:Binding::MouseRight};}
   else if(v>127||v==0x44)throw std::invalid_argument("invalid physical scan code");
   else base[i]=v?Binding{static_cast<unsigned short>(v),false,Binding::Keyboard}:Binding{};
@@ -51,6 +51,7 @@ Settings loadAimSettings(const wchar_t* path){
  s.snapPixelsPerDegree=readNumber(path,L"Movement",L"SnapPixelsPerDegree",L"10",30);
  if(!s.snapPixelsPerDegree)throw std::invalid_argument("zero snap sensitivity");
  s.extraLookDeadzonePercent=readNumber(path,L"Movement",L"ExtraLookDeadzonePercent",L"0",40);
+ s.weaponSelect=readNumber(path,L"Movement",L"WeaponSelect",L"0",1)!=0;
  s.strictTools=readNumber(path,L"Movement",L"StrictTools",L"0",1)!=0;
  s.toolLayer=readNumber(path,L"Movement",L"ToolLayer",L"1",1)!=0;
  return s;
