@@ -11,7 +11,7 @@ ACTIONS = [
  ('Bindings','Jump','Sauter',0x39),('Bindings','Interact','Interagir',0x12),('Bindings','Crouch','Accroupissement',0x2e),('Bindings','Sprint','Courir',0x2a),
  ('Bindings','CycleTool','Changer d’équipement',0x10),('Bindings','Reload','Recharger',0x13),('Bindings','Primary','Action principale',256),('Bindings','Secondary','Action secondaire',257),
  ('Tools','EnergyLink','Transfert d’énergie',0),('Tools','ProfileAnalyser','Analyseur de profil',0),('Tools','SuitTool','Outil de combinaison',0),('Tools','Holster','Ranger équipement',0),('Tools','Flashlight','Lampe',0),('Tools','ToolMode','Mode de l’outil',0)]
-OPTIONS = [('MotionAim','Enabled','Visée par mouvement',1,0,1),('MotionAim','TwoHandEnabled','Visée à deux mains (expérimentale)',0,0,1),('Movement','LeftHanded','Profil gaucher (inverse les manettes)',0,0,1),('MotionAim','PixelsPerDegree','Sensibilité main (px/degré)',10,1,30),('MotionAim','InvertY','Inverser axe vertical',0,0,1),('Movement','LookPixelsPerSecond','Sensibilité stick (px/s)',900,0,3000),('Movement','ToolLayer','Couche outils (grip non dominant)',1,0,1),('Visual','Hands','Canal visualiseur local',0,0,1),('Visual','Overlay','Mains dans le casque',0,0,1),('Visual','Laser','Pointeur visuel',0,0,1),('Visual','Haptics','Vibrations',0,0,1),('Visual','HapticPercent','Intensité vibration (%)',25,0,100)]
+OPTIONS = [('MotionAim','Enabled','Visée par mouvement',1,0,1),('MotionAim','TwoHandEnabled','Visée à deux mains (expérimentale)',0,0,1),('Movement','LeftHanded','Profil gaucher (inverse les manettes)',0,0,1),('MotionAim','PixelsPerDegree','Sensibilité main (px/degré)',10,1,30),('MotionAim','InvertY','Inverser axe vertical',0,0,1),('Movement','SnapMode','Rotation : 0 fluide, 1/2/3 = 15/30/45° indicatifs',0,0,3),('Movement','SnapPixelsPerDegree','Calibration rotation (px/degré)',10,1,30),('Movement','ExtraLookDeadzonePercent','Zone morte supplémentaire visée (%)',0,0,40),('Movement','LookPixelsPerSecond','Sensibilité stick (px/s)',900,0,3000),('Movement','ToolLayer','Couche outils (grip non dominant)',1,0,1),('Visual','Hands','Canal visualiseur local',0,0,1),('Visual','Overlay','Mains dans le casque',0,0,1),('Visual','Laser','Pointeur visuel',0,0,1),('Visual','Haptics','Vibrations',0,0,1),('Visual','HapticPercent','Intensité vibration (%)',25,0,100)]
 KEYS = {0:'Désactivé',256:'Souris gauche',257:'Souris droite',0x01:'Échap',0x0e:'Retour arrière',0x0f:'Tab',0x1c:'Entrée',0x1d:'Ctrl gauche',0x2a:'Maj gauche',0x36:'Maj droite',0x38:'Alt gauche',0x39:'Espace'}
 for start, labels in [(2,'1234567890'),(0x10,'AZERTYUIOP'),(0x1e,'QSDFGHJKLM'),(0x2c,'WXCVBN')]:
  for offset,label in enumerate(labels): KEYS[start+offset]=label
@@ -69,7 +69,7 @@ def save(path,values):
 def main():
  import tkinter as tk
  from tkinter import ttk,filedialog,messagebox
- root=tk.Tk();root.title('ED-UP VR Control Center v0.9.4 — Philou Cyberpunk');root.geometry('840x760');root.minsize(720,640)
+ root=tk.Tk();root.title('ED-UP VR Control Center v0.9.5 — Philou Cyberpunk');root.geometry('840x760');root.minsize(720,640)
  style=ttk.Style(root);style.theme_use('clam');style.configure('Header.TLabel',font=('Segoe UI',18,'bold'));style.configure('TButton',padding=6)
  body=ttk.Frame(root,padding=16);body.pack(fill='both',expand=True)
  ttk.Label(body,text='ED-UP VR CONTROL CENTER',style='Header.TLabel').pack(anchor='w');ttk.Label(body,text='Odyssey à pied • Meta Quest 3 • OpenXR • Configuration locale').pack(anchor='w',pady=(0,12))
@@ -84,11 +84,13 @@ def main():
    var=tk.StringVar(value=label(v));vars[s,k]=var;choices=[label(x) for x in sorted(KEYS) if section=='Bindings' or x<256]
    c=ttk.Combobox(tab,textvariable=var,values=choices,state='readonly');c.grid(row=i,column=1,sticky='ew',pady=3);comboboxes[s,k]=c
  settings=ttk.Frame(tabs,padding=14);tabs.add(settings,text='Sensibilité / affichage');settings.columnconfigure(1,weight=1)
+ comfort=ttk.Frame(tabs,padding=14);tabs.add(comfort,text='Confort VR');comfort.columnconfigure(1,weight=1)
  for i,(s,k,t,v,lo,hi) in enumerate(OPTIONS):
+  pane=comfort if s=='Movement' else settings
   var=tk.IntVar(value=v);vars[s,k]=var
-  if hi==1: ttk.Checkbutton(settings,text=t,variable=var).grid(row=i,column=0,columnspan=2,sticky='w',pady=5)
+  if hi==1: ttk.Checkbutton(pane,text=t,variable=var).grid(row=i,column=0,columnspan=2,sticky='w',pady=5)
   else:
-   ttk.Label(settings,text=t).grid(row=i,column=0,sticky='w',pady=5);ttk.Spinbox(settings,from_=lo,to=hi,textvariable=var,width=10).grid(row=i,column=1,sticky='w')
+   ttk.Label(pane,text=t).grid(row=i,column=0,sticky='w',pady=5);ttk.Spinbox(pane,from_=lo,to=hi,textvariable=var,width=10).grid(row=i,column=1,sticky='w')
  diag=ttk.Frame(tabs,padding=14);tabs.add(diag,text='Diagnostic / aide');result=tk.StringVar(value='Aucun dossier sélectionné.');ttk.Label(diag,textvariable=result,wraplength=680,justify='left').pack(anchor='w',pady=(0,12));ttk.Label(diag,text='Ce panneau ne communique pas directement avec le casque.\nPour calibrer : en jeu à pied, F10 puis contrôleurs au neutre ;\nmaintenir le grip dominant pour recaler la visée relative.\nPour deux mains : grip dominant, puis grip non dominant.\nFermer le jeu avant de modifier le fichier. Redémarrage obligatoire.\nEDUP_VR_ONFOOT=1 reste nécessaire dans l’environnement du jeu.\nLes variables EDUP_VR_HANDS/OVERLAY/LASER/HAPTICS à 0 ou 1\nont priorité sur les choix de ce panneau.',justify='left').pack(anchor='w')
  def apply(values):
   for s,k,_,_ in ACTIONS:
