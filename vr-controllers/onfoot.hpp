@@ -13,7 +13,8 @@ enum Action {Forward, Back, Left, Right, Jump, Interact, Crouch, Sprint, CycleTo
 using Keys=std::bitset<Count>;
 struct Hand {bool ready=false, primary=false, secondary=false, stickClick=false; float x=0,y=0,trigger=0,squeeze=0; Orientation aim{}; edup::experimental::Vec3 gripPosition{}; bool gripTracked=false;};
 struct Sample {std::array<Hand,2> hand{}; bool enabled=false, focused=false;};
-struct Output {Keys held{}; int dx=0,dy=0; bool pointing=false;};
+enum class ControlMode : uint32_t { Neutral=0, Normal=1, Tools=2, Motion=3, TwoHand=4, Snap=5 };
+struct Output {Keys held{}; int dx=0,dy=0; bool pointing=false; ControlMode mode=ControlMode::Neutral;};
 struct Settings {float moveOn=.55f,moveOff=.35f,triggerOn=.65f,triggerOff=.40f; float lookPixelsPerSecond=900.f; bool invertY=false; bool toolLayer=true; bool motionAim=true; float aimPixelsPerDegree=10.f; bool twoHandAim=false; bool leftHanded=false; unsigned snapMode=0; unsigned snapPixelsPerDegree=10; unsigned extraLookDeadzonePercent=0; bool strictTools=false;};
 class Mapper {
  Settings cfg_; Keys held_; bool armed_=false, tools_=false, layerReady_=false, chordBlocked_=false; float remX_=0,remY_=0; MotionAim motion_; bool clutch_=false; edup::experimental::TwoHandFilter twoFilter_; MotionAim twoMotion_; bool twoActive_=false; double twoTime_=0; bool snapReady_=false;
@@ -52,7 +53,7 @@ public:
    auto aim=twoMotion_.update(true,q,cfg_.aimPixelsPerDegree,cfg_.invertY,dt);
    if(!aim.usable)return reset();
    held_.reset();remX_=remY_=0;snapReady_=false;
-   Output out;out.dx=aim.dx;out.dy=aim.dy;return out;
+   Output out;out.dx=aim.dx;out.dy=aim.dy;out.mode=ControlMode::TwoHand;return out;
   }
   // Left grip is a physical modifier, not a game action. Hysteresis prevents chatter.
   const bool nextTools=cfg_.toolLayer && l.squeeze>=(tools_?.40f:.70f);
@@ -68,12 +69,12 @@ public:
    const bool conflict=cfg_.strictTools && (std::abs(l.x)>=.10f||std::abs(l.y)>=.10f||std::abs(r.x)>=.10f||std::abs(r.y)>=.10f||r.squeeze>=.05f);
    if(conflict)chordBlocked_=true;
    if(n>1||l.trigger>=.05f||r.trigger>=.05f||(n==1&&held_.any()&&!held_[actions[selected]]))chordBlocked_=true;
-   Output o;
+   Output o;o.mode=ControlMode::Tools;
    if(n==0&&!conflict&&l.trigger<.05f&&r.trigger<.05f)chordBlocked_=false;
    if(n==1&&!chordBlocked_)o.held[actions[selected]]=true;
    held_=o.held;return o;
   }
-  Output out; auto set=[&](Action a,float v,float on,float off){out.held[a]=hysteresis(a,v,on,off);};
+  Output out;out.mode=cfg_.snapMode?ControlMode::Snap:ControlMode::Normal; auto set=[&](Action a,float v,float on,float off){out.held[a]=hysteresis(a,v,on,off);};
   set(Forward,l.y,cfg_.moveOn,cfg_.moveOff);set(Back,-l.y,cfg_.moveOn,cfg_.moveOff);
   set(Right,l.x,cfg_.moveOn,cfg_.moveOff);set(Left,-l.x,cfg_.moveOn,cfg_.moveOff);
   out.held[Jump]=r.secondary;out.held[Interact]=r.primary;out.held[Crouch]=l.primary;
@@ -85,7 +86,7 @@ public:
    auto aim=motion_.update(true,r.aim,cfg_.aimPixelsPerDegree,cfg_.invertY,dt);
    out.dx=aim.dx;out.dy=aim.dy;
    if(!aim.usable)return reset();
-   out.pointing=true;held_=out.held;return out;
+   out.pointing=true;out.mode=ControlMode::Motion;held_=out.held;return out;
   }
   // InputCore already applies its stick deadzone. Fractional pixels preserve slow motion.
   const float dead=cfg_.extraLookDeadzonePercent/100.f;
