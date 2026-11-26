@@ -16,6 +16,15 @@ class ConfigTests(unittest.TestCase):
   v=c.defaults();p=c.tool_preset(v);self.assertEqual(p['Tools','EnergyLink'],4);self.assertEqual(v['Tools','EnergyLink'],0)
   v['Bindings','Jump']=4
   with self.assertRaises(ValueError):c.tool_preset(v)
+ def test_weapon_config(self):
+  v=c.defaults();self.assertEqual(v['Movement','WeaponSelect'],0)
+  v['Movement','WeaponSelect']=1;v['Weapons','SelectPrimaryWeapon']=2;v['Weapons','SelectSecondaryWeapon']=3
+  with tempfile.TemporaryDirectory() as d:
+   p=Path(d)/'edup-vr-tools.ini';c.save(p,v);self.assertEqual(c.read(p),v)
+  v['Weapons','SelectSecondaryWeapon']=256
+  with self.assertRaises(ValueError):c.validate(v)
+  v['Weapons','SelectSecondaryWeapon']=2
+  with self.assertRaises(ValueError):c.validate(v)
  def test_preserve_unknown(self):
   with tempfile.TemporaryDirectory() as d:
    p=Path(d)/'edup-vr-tools.ini';p.write_text('[Other]\nFoo=bar\n');c.save(p,c.defaults());self.assertIn('Foo = bar',p.read_text())
