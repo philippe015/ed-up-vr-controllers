@@ -1,0 +1,43 @@
+name: VR OnFoot Windows
+on:
+  push:
+    branches: [main]
+    paths: ['vr-controllers/**', 'appliquer-integration.py', '.github/workflows/vr-input-core.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: KhronosGroup/OpenXR-SDK
+          ref: 24a1f2b92d212501a2b1b8d30ffd53abf55fcfa8
+          path: openxr-sdk
+      - uses: actions/checkout@v4
+        with:
+          repository: characterecho-sean/ed-unofficial-patch
+          path: ed-up-upstream
+      - name: Check upstream integration anchors
+        run: python appliquer-integration.py ed-up-upstream --check
+      - name: Configure
+        run: cmake -S vr-controllers -B build-vr -A x64 -DOPENXR_INCLUDE_DIR="${{ github.workspace }}/openxr-sdk/include"
+      - name: Build
+        run: cmake --build build-vr --config Release
+      - name: Test
+        run: ctest --test-dir build-vr -C Release --output-on-failure
+      - uses: actions/upload-artifact@v4
+        with:
+          name: edup-vr-onfoot-windows-x64
+          path: |
+            build-vr/Release/edup_vr_input.lib
+            build-vr/Release/edup_hands_viewer.exe
+            vr-controllers/control_center.py
+            vr-controllers/ouvrir-control-center.bat
+            vr-controllers/edup-vr-tools.ini
+            vr-controllers/diagnostic-openxr.ps1
+            vr-controllers/diagnostic-openxr.bat
+            vr-controllers/VALIDATION-WINDOWS.md
+          if-no-files-found: error
