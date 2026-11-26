@@ -39,6 +39,12 @@ Setup does not automatically download dependencies or launch the game. Testing t
 
 [Validation PR #1](https://github.com/philippe015/ed-up-vr-controllers/pull/1) · [v0.9.9 source](https://github.com/philippe015/ed-up-vr-controllers/tree/feature/onfoot-vr-enhanced) · [Technical documentation](https://github.com/philippe015/ed-up-vr-controllers/blob/feature/onfoot-vr-enhanced/vr-controllers/README.md) · [Report an issue](https://github.com/philippe015/ed-up-vr-controllers/issues)
 
+### Next development — v0.9.10: Odyssey weapon selection
+
+Experimental direct selection: hold the support grip and deflect the dominant stick up (primary weapon) or down (secondary weapon). WeaponSelect is off by default; configure the new bindings in the Armes tab. Return to neutral between selections; firing is blocked during selection. New tests and build remain unverified. The v0.9.9 download above remains the last verified diagnostic build.
+
+[v0.9.10 technical notes](https://github.com/philippe015/ed-up-vr-controllers/blob/feature/onfoot-vr-enhanced/vr-controllers/README.md)
+
 ## 1. Overview and features
 
 This community project extends [ED Unofficial Patch](https://github.com/characterecho-sean/ed-unofficial-patch) with VR controller input for Odyssey on-foot gameplay. The following features are implemented in experimental source code; their operation in the game and headset still requires validation.
