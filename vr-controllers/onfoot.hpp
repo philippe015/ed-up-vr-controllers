@@ -9,15 +9,15 @@
 #include "motion_aim.hpp"
 #include "two_hand_pose.h"
 namespace edup::vrinput::foot {
-enum Action {Forward, Back, Left, Right, Jump, Interact, Crouch, Sprint, CycleTool, Reload, Primary, Secondary, EnergyLink, ProfileAnalyser, SuitTool, Holster, Flashlight, ToolMode, Count};
+enum Action {Forward, Back, Left, Right, Jump, Interact, Crouch, Sprint, CycleTool, Reload, Primary, Secondary, EnergyLink, ProfileAnalyser, SuitTool, Holster, Flashlight, ToolMode, SelectPrimaryWeapon, SelectSecondaryWeapon, Count};
 using Keys=std::bitset<Count>;
 struct Hand {bool ready=false, primary=false, secondary=false, stickClick=false; float x=0,y=0,trigger=0,squeeze=0; Orientation aim{}; edup::experimental::Vec3 gripPosition{}; bool gripTracked=false;};
 struct Sample {std::array<Hand,2> hand{}; bool enabled=false, focused=false;};
 enum class ControlMode : uint32_t { Neutral=0, Normal=1, Tools=2, Motion=3, TwoHand=4, Snap=5 };
 struct Output {Keys held{}; int dx=0,dy=0; bool pointing=false; ControlMode mode=ControlMode::Neutral;};
-struct Settings {float moveOn=.55f,moveOff=.35f,triggerOn=.65f,triggerOff=.40f; float lookPixelsPerSecond=900.f; bool invertY=false; bool toolLayer=true; bool motionAim=true; float aimPixelsPerDegree=10.f; bool twoHandAim=false; bool leftHanded=false; unsigned snapMode=0; unsigned snapPixelsPerDegree=10; unsigned extraLookDeadzonePercent=0; bool strictTools=false;};
+struct Settings {float moveOn=.55f,moveOff=.35f,triggerOn=.65f,triggerOff=.40f; float lookPixelsPerSecond=900.f; bool invertY=false; bool toolLayer=true; bool motionAim=true; float aimPixelsPerDegree=10.f; bool twoHandAim=false; bool leftHanded=false; unsigned snapMode=0; unsigned snapPixelsPerDegree=10; unsigned extraLookDeadzonePercent=0; bool strictTools=false; bool weaponSelect=false;};
 class Mapper {
- Settings cfg_; Keys held_; bool armed_=false, tools_=false, layerReady_=false, chordBlocked_=false; float remX_=0,remY_=0; MotionAim motion_; bool clutch_=false; edup::experimental::TwoHandFilter twoFilter_; MotionAim twoMotion_; bool twoActive_=false; double twoTime_=0; bool snapReady_=false;
+ Settings cfg_; Keys held_; bool armed_=false, tools_=false, layerReady_=false, chordBlocked_=false; float remX_=0,remY_=0; MotionAim motion_; bool clutch_=false; edup::experimental::TwoHandFilter twoFilter_; MotionAim twoMotion_; bool twoActive_=false; double twoTime_=0; bool snapReady_=false; bool weaponBusy_=false,weaponConsumed_=false;
  bool hysteresis(Action a,float value,float on,float off) const {return value>=(held_[a]?off:on);}
  static bool valid(const Hand& h){return h.ready&&analogValid(h.x,-1.f,1.f)&&analogValid(h.y,-1.f,1.f)&&analogValid(h.trigger,0.f,1.f)&&analogValid(h.squeeze,0.f,1.f);}
  static bool neutral(const Hand& h){return std::abs(h.x)<.10f&&std::abs(h.y)<.10f&&h.trigger<.05f&&h.squeeze<.05f&&!h.primary&&!h.secondary&&!h.stickClick;}
@@ -30,7 +30,7 @@ public:
   cfg_.snapMode=std::min(cfg_.snapMode,3u);cfg_.snapPixelsPerDegree=std::clamp(cfg_.snapPixelsPerDegree,1u,30u);cfg_.extraLookDeadzonePercent=std::min(cfg_.extraLookDeadzonePercent,40u);
   cfg_.aimPixelsPerDegree=std::clamp(safe(cfg_.aimPixelsPerDegree,10.f),1.f,30.f);
  }
- Output reset(){held_.reset();armed_=false;tools_=layerReady_=chordBlocked_=false;remX_=remY_=0;motion_.reset();clutch_=false;twoFilter_.reset();twoMotion_.reset();twoActive_=false;twoTime_=0;snapReady_=false;return {};}
+ Output reset(){held_.reset();armed_=false;tools_=layerReady_=chordBlocked_=false;remX_=remY_=0;motion_.reset();clutch_=false;twoFilter_.reset();twoMotion_.reset();twoActive_=false;twoTime_=0;snapReady_=false;weaponBusy_=weaponConsumed_=false;return {};}
  Output update(const Sample& s,float dt){
   const auto& l=s.hand[cfg_.leftHanded?1:0];const auto& r=s.hand[cfg_.leftHanded?0:1];
   if(!s.enabled||!s.focused||!valid(l)||!valid(r)||!std::isfinite(dt)||dt<0||dt>=.1f)return reset();
@@ -57,7 +57,7 @@ public:
   }
   // Left grip is a physical modifier, not a game action. Hysteresis prevents chatter.
   const bool nextTools=cfg_.toolLayer && l.squeeze>=(tools_?.40f:.70f);
-  if(nextTools!=tools_){tools_=nextTools;layerReady_=false;chordBlocked_=false;held_.reset();remX_=remY_=0;motion_.reset();clutch_=false;snapReady_=false;return {};}
+  if(nextTools!=tools_){tools_=nextTools;layerReady_=false;chordBlocked_=false;weaponBusy_=weaponConsumed_=false;held_.reset();remX_=remY_=0;motion_.reset();clutch_=false;snapReady_=false;return {};}
   auto layerNeutral=[&]{Hand left=l;if(tools_)left.squeeze=0;return neutral(left)&&neutral(r);};
   if(!layerReady_){layerReady_=layerNeutral();return {};}
   if(tools_){
@@ -65,6 +65,24 @@ public:
    const std::array<bool,6> buttons={l.primary,l.secondary,r.primary,r.secondary,l.stickClick,r.stickClick};
    const std::array<Action,6> actions={EnergyLink,ProfileAnalyser,SuitTool,Holster,Flashlight,ToolMode};
    unsigned n=0,selected=0;for(unsigned i=0;i<buttons.size();++i)if(buttons[i]){++n;selected=i;}
+   // Opt-in equipment selection: support grip + dominant stick up/down.
+   // One short key press per deliberate deflection; never fire or move in this layer.
+   if(cfg_.weaponSelect && (weaponBusy_ || std::abs(r.y)>=.20f || std::abs(r.x)>=.20f)){
+    weaponBusy_=true;Output o;o.mode=ControlMode::Tools;
+    const bool conflict=n!=0||l.trigger>=.05f||r.trigger>=.05f||r.squeeze>=.05f||
+      std::abs(l.x)>=.10f||std::abs(l.y)>=.10f||std::abs(r.x)>=.20f||chordBlocked_||
+      (held_.any()&&!held_[SelectPrimaryWeapon]&&!held_[SelectSecondaryWeapon]);
+    if(conflict)weaponConsumed_=true;
+    if(!weaponConsumed_ && std::abs(r.y)>=.75f){
+     weaponConsumed_=true;
+     o.held[r.y>0?SelectPrimaryWeapon:SelectSecondaryWeapon]=true;
+    }
+    if(n==0&&l.trigger<.05f&&r.trigger<.05f&&r.squeeze<.05f&&
+       std::abs(l.x)<.10f&&std::abs(l.y)<.10f&&std::abs(r.x)<.20f&&std::abs(r.y)<.20f){
+     weaponBusy_=weaponConsumed_=chordBlocked_=false;
+    }
+    held_=o.held;return o;
+   }
    // Optional strict selection: any conflicting physical input requires a clean release.
    const bool conflict=cfg_.strictTools && (std::abs(l.x)>=.10f||std::abs(l.y)>=.10f||std::abs(r.x)>=.10f||std::abs(r.y)>=.10f||r.squeeze>=.05f);
    if(conflict)chordBlocked_=true;
