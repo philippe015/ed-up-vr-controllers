@@ -91,3 +91,7 @@ else()
  target_compile_options(stability_test PRIVATE -UNDEBUG)
 endif()
 add_test(NAME stability_faults COMMAND stability_test)
+
+add_executable(two_hand_pose_test tests/two_hand_pose_test.cpp)
+target_include_directories(two_hand_pose_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+add_test(NAME two_hand_pose COMMAND two_hand_pose_test)
