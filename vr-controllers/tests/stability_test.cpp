@@ -19,7 +19,7 @@ int main(){
  for(int i=0;i<20000;++i){s.hand[0].x=float(int(rng()%201)-100)/100;s.hand[0].y=float(int(rng()%201)-100)/100;s.hand[1].trigger=float(rng()%101)/100;s.focused=(rng()%5)!=0;s.hand[1].ready=(rng()%7)!=0;auto o=m.update(s,.01f);if(!s.focused||!s.hand[1].ready)assert(o.held.none()&&o.dx==0&&o.dy==0);assert(!(o.held[Left]&&o.held[Right]));assert(!(o.held[Forward]&&o.held[Back]));}
  // Exercise every new mode with deterministic mixed inputs and injected faults.
  for(unsigned profile=0;profile<2;++profile)for(unsigned snap=0;snap<4;++snap){
-  Settings cfg;cfg.leftHanded=profile!=0;cfg.snapMode=snap;cfg.twoHandAim=true;cfg.strictTools=true;
+  Settings cfg;cfg.leftHanded=profile!=0;cfg.snapMode=snap;cfg.twoHandAim=true;cfg.strictTools=true;cfg.weaponSelect=true;
   Mapper mixed(cfg);Sample v;
   for(unsigned i=0;i<10000;++i){
    v={};v.enabled=v.focused=true;
