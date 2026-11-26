@@ -1,4 +1,5 @@
 #include "two_hand_pose.h"
+#include "onfoot.hpp"
 #include <limits>
 using namespace edup::experimental;
 int main() {
@@ -29,5 +30,20 @@ int main() {
  filter.update(a,b,true,true,true,false,0.21);
  if (!filter.update(a,b,true,true,true,true,0.22).valid) return 18;
  if (filter.update(a,{0,0,0.4},true,true,true,true,0.23).valid) return 19;
+ // Mapper integration: opt-in, right grip first, exclusive camera control.
+ using namespace edup::vrinput::foot;
+ Settings cfg;cfg.twoHandAim=true;Mapper mapper(cfg);
+ Sample s;s.enabled=s.focused=true;
+ auto& l=s.hand[0];auto& right=s.hand[1];
+ l.ready=right.ready=l.gripTracked=right.gripTracked=true;
+ l.gripPosition={0,0,-.4};right.gripPosition={};right.aim.tracked=true;
+ auto step=[&]{return mapper.update(s,.01f);};
+ step();right.squeeze=.8f;step();l.squeeze=.8f;
+ auto o=step();if(o.dx||o.dy||o.held.any())return 20;
+ l.gripPosition={.1,0,-.4};o=step();if(o.dx<=0||o.held.any())return 21;
+ l.gripTracked=false;o=step();if(o.dx||o.dy||o.held.any())return 22;
+ l.gripTracked=true;o=step();if(o.dx||o.dy||o.held.any())return 23;
+ l.squeeze=right.squeeze=0;step();l.squeeze=.8f;step();step();
+ l.primary=true;if(!step().held[EnergyLink])return 24;
  return 0;
 }
