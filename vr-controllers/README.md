@@ -1,3 +1,9 @@
+# v0.9.6 — Odyssey Tools Enhanced (experimental)
+
+The French Control Center now has a Préréglage outils button. It proposes six example keyboard bindings (3, 4, 5, H, T, M), checks conflicts with existing actions, and modifies only the form until the user explicitly saves. Match bindings in the game manually. `[Movement] StrictTools=1` optionally blocks tool selection when either stick is outside neutral or the dominant grip or triggers are held; release conflicting inputs and all selection buttons before retrying. Default 0 preserves existing behavior. Existing haptic feedback still confirms input submission only, never game-side success. EnergyLink, scanner and suit-specific tools remain manual; the module does not detect a charging port or tool state. New C++ and Python regression tests are included but not yet verified. Windows compilation and physical headset tests remain pending.
+
+---
+
 # v0.9.5 — VR Comfort (experimental)
 
 New French Control Center Confort VR tab. `[Movement] SnapMode=0` retains continuous rotation; 1, 2, 3 select nominal 15, 30, 45 degree turns. `SnapPixelsPerDegree=10` is a calibration setting (1–30); actual in-game angles are not guaranteed because output is a relative mouse pulse, not a native OpenXR camera rotation. Stick horizontal threshold 0.75, rearm below 0.20. No repeated or queued turns. Motion clutch and tool transitions clear the latch. `ExtraLookDeadzonePercent=0` (0–40) adds deadzone to continuous look axes after InputCore processing; it does not alter movement or snap thresholds. Existing defaults unchanged. Both handedness profiles supported. Restart required after saving. Automated motion regression tests added; Windows build and headset comfort not yet verified.
