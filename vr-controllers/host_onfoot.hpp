@@ -15,6 +15,7 @@ namespace edup::vrinput::foot {
 // Optional integration with ED-UP's existing owner thread. No new XR session.
 class HostOnFoot {
  hands::Channel handsChannel_;bool handsEnabled_=false,overlayEnabled_=false,laserEnabled_=false,hapticsEnabled_=false;
+ bool leftHanded_=false;
  HapticLimiter hapticLimiter_;float hapticStrength_=.25f;
  hands::Snapshot overlay_{};XrTime overlayTime_=0;
  void clearHands(){overlay_={};overlayTime_=0;if(handsEnabled_)handsChannel_.write(hands::Snapshot{});}
@@ -22,7 +23,7 @@ class HostOnFoot {
  void publishHands(XrSpace view,XrSpace base,XrTime t,bool pointing){
   if(!handsEnabled_&&!overlayEnabled_)return;hands::Snapshot out;XrPosef head{};
   if(core_.locateHead(view,base,t,head))for(unsigned i=0;i<2;++i){const auto& h=core_.hands()[i];if(h.tracked&&h.ready)hands::set(out,i,hands::make(convert(h.grip),convert(head),i==0,h.trigger,h.squeeze));}
-  if(laserEnabled_&&pointing&&out.valid[0]&&out.valid[1]&&pointerRay(convert(core_.hands()[1].aim),convert(head),out.laser))out.laserValid=1;
+  if(laserEnabled_&&pointing&&out.valid[0]&&out.valid[1]&&pointerRay(convert(core_.hands()[leftHanded_?0:1].aim),convert(head),out.laser))out.laserValid=1;
   out.tick=GetTickCount64();
   if(overlayEnabled_){overlay_=out;overlayTime_=t;}
   if(handsEnabled_)handsChannel_.write(out);
@@ -44,7 +45,8 @@ public:
    if(sep==std::wstring::npos)throw std::runtime_error("game directory unavailable");
    path.resize(sep+1);path+=L"edup-vr-tools.ini";
    const auto visual=loadVisualSettings(path.c_str());
-   bridge_=std::make_unique<WindowsBridge>(GetCurrentProcessId(),loadToolBindings(path.c_str()),loadAimSettings(path.c_str()));
+   const auto settings=loadAimSettings(path.c_str());leftHanded_=settings.leftHanded;
+   bridge_=std::make_unique<WindowsBridge>(GetCurrentProcessId(),loadToolBindings(path.c_str()),settings);
    if(visual.hands)handsEnabled_=handsChannel_.open(GetCurrentProcessId(),true);
    overlayEnabled_=visual.overlay;laserEnabled_=visual.laser;hapticsEnabled_=visual.haptics;hapticStrength_=visual.hapticStrength;
   }catch(...){bridge_.reset();OutputDebugStringW(L"ED-UP VR OnFoot: invalid configuration or bridge unavailable; disabled.\n");}
@@ -60,8 +62,9 @@ public:
   if(core_.poll(true,base,t)!=XR_SUCCESS){suspend();return;}
   const auto report=bridge_->submit(fromCore(core_,true,true));
   if(hapticsEnabled_&&hapticStrength_>0&&foregroundGame()){const auto cue=cues(report.pressed);const auto now=GetTickCount64();
-   if(cue.left&&hapticLimiter_.permit(0,now))core_.pulse(0,hapticStrength_);
-   if(cue.right&&hapticLimiter_.permit(1,now))core_.pulse(1,hapticStrength_);
+   const unsigned support=leftHanded_?1:0, dominant=leftHanded_?0:1;
+   if(cue.left&&hapticLimiter_.permit(support,now))core_.pulse(support,hapticStrength_);
+   if(cue.right&&hapticLimiter_.permit(dominant,now))core_.pulse(dominant,hapticStrength_);
   }
   publishHands(view,base,t,report.pointing);
  }
