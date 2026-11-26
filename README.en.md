@@ -1,4 +1,4 @@
-# ED-UP VR Controllers — v0.9.11 Experimental
+# ED-UP VR Controllers — v0.9.12 Experimental
 
 **By Philou Cyberpunk — Elite Dangerous: Odyssey / Windows 11 x64 / Meta Quest 3 / OpenXR**
 
@@ -6,18 +6,18 @@
 
 ## Automatic Windows test-tools installer
 
-[![Download Windows x64](https://img.shields.io/badge/DOWNLOAD-WINDOWS%20x64-238636?style=for-the-badge&logo=windows)](https://github.com/philippe015/ed-up-vr-controllers/actions/runs/45893629929/artifacts/15152811574)
+[![Download Windows x64](https://img.shields.io/badge/DOWNLOAD-WINDOWS%20x64-238636?style=for-the-badge&logo=windows)](https://github.com/philippe015/ed-up-vr-controllers/actions/runs/45894360389/artifacts/15152942139)
 
-**[DOWNLOAD TEST INSTALLER (ZIP)](https://github.com/philippe015/ed-up-vr-controllers/actions/runs/45893629929/artifacts/15152811574)** — GitHub sign-in required, expires December 10, 2026.
+**[DOWNLOAD TEST INSTALLER (ZIP)](https://github.com/philippe015/ed-up-vr-controllers/actions/runs/45894360389/artifacts/15152942139)** — GitHub sign-in required, expires December 10, 2026.
 
 [Open the test installer build workflow](https://github.com/philippe015/ed-up-vr-controllers/actions/workflows/windows-test-installer.yml)
 
-Filename: `ED-UP-VR-Test-Setup-v0.9.11-x64.exe`. English/French wizard, per-user installation under LocalAppData without elevation, shortcuts, simulated viewer, read-only OpenXR diagnostic, configuration utility (Python 3.10+ required) and uninstall. CI builds the tools, runs CTest and checks installation/uninstallation before uploading the artifact. Windows build and automated install/uninstall tests passed on November 26, 2026. **This setup does not modify game DLLs and does not by itself enable the new in-game VR controls.** Full patch build and packaging validation remain required.
+Filename: `ED-UP-VR-Test-Setup-v0.9.12-x64.exe`. English/French wizard, per-user installation under LocalAppData without elevation, shortcuts, simulated viewer, read-only OpenXR diagnostic, configuration utility (Python 3.10+ required) and uninstall. CI builds the tools, runs CTest and checks installation/uninstallation before uploading the artifact. Windows build and automated install/uninstall tests passed on November 26, 2026. **This setup does not modify game DLLs and does not by itself enable the new in-game VR controls.** Full patch build and packaging validation remain required.
 
 ### How to install: double-click the setup file
 
 1. Download the ZIP above and select **Extract All** in Windows.
-2. Open the extracted directory and double-click `ED-UP-VR-Test-Setup-v0.9.11-x64.exe`. Verify its origin and supplied SHA-256 checksum before running. The setup is unsigned; Windows SmartScreen may display a warning.
+2. Open the extracted directory and double-click `ED-UP-VR-Test-Setup-v0.9.12-x64.exe`. Verify its origin and supplied SHA-256 checksum before running. The setup is unsigned; Windows SmartScreen may display a warning.
 3. Select **English** or **Français** in the setup wizard.
 4. Read and accept the experimental scope notice. Follow the wizard, optionally select the desktop shortcut, then click **Install**.
 5. Setup automatically copies the tools to `%LOCALAPPDATA%\EDUP-VR-Test-Tools` without administrator privileges or changes to game DLLs.
@@ -51,7 +51,11 @@ New SteamVR / OpenXR tab: read-only configured runtime detection, indicative Ste
 
 ### v0.9.12 — Valve Index (experimental)
 
-Valve Index OpenXR profile added in source: A/B on both hands, sticks, triggers, analog squeeze, poses and haptics. Touch profiles unchanged. Windows module compilation and headset tests remain unverified. The verified diagnostic download remains v0.9.11. [Build tracking](https://github.com/philippe015/ed-up-vr-controllers/actions).
+Valve Index OpenXR profile added in source: A/B on both hands, sticks, triggers, analog squeeze, poses and haptics. Touch profiles unchanged. Windows module compilation and installer tests passed. Headset tests remain pending. [Build tracking](https://github.com/philippe015/ed-up-vr-controllers/actions).
+
+### v0.9.13 — Immersive gestures (validation pending)
+
+Hold support grip then dominant grip in a virtual zone: hip (secondary weapon), shoulder (primary weapon), opposite chest (EnergyLink, Profile Analyser or suit tool), dominant front chest (reload). EquipmentGestures off by default, scale 70–130%. These are keyboard shortcuts, not native 3D manipulation. Graphical radial menu and wrist UI remain future work. Build and hardware tests pending.
 
 ## 1. Overview and features
 
