@@ -1,3 +1,13 @@
+# v0.9.10 — Manual weapon selection (experimental)
+
+Optional `[Movement] WeaponSelect=1` (default 0, requires ToolLayer=1). Configure `[Weapons] SelectPrimaryWeapon=0x02` and `SelectSecondaryWeapon=0x03` (physical number row 1 and 2 examples), or choose keys in the new Armes tab of the French Control Center. Bind the matching actions in the game's on-foot controls; 0 disables either binding. Existing bindings remain unchanged.
+
+Hold support grip, let both sticks and buttons return to neutral, then deflect dominant stick up for primary weapon or down for secondary weapon. Release stick to neutral between selections. One brief key transition per gesture, no repeating, no auto-fire, no movement or camera rotation in the tool layer. Simultaneous buttons, triggers, support stick movement, diagonal deflection or dominant grip block selection until a clean release. Release support grip and return to neutral before normal gameplay. Dominant trigger remains the ordinary manual primary action; support trigger remains secondary, and existing holster (support grip + dominant secondary button) and reload (dominant stick click outside layer) remain unchanged. Handedness mirrors roles. Optional haptic cue confirms only input submission.
+
+This is keyboard/mouse mapping for fictional in-game equipment, not native 3D weapon grabbing, game-state detection or independent aiming. A brief selection pulse may need adjustment if the game misses it; physical test pending. No change to the previously validated v0.9.9 diagnostic installer. New source/tests need compilation and headset validation.
+
+---
+
 # v0.9.8 — Performance & Stability (experimental)
 
 The mapper skips dispatch when key states are unchanged, rejects intervals at or above 100 ms, and consumes a snap gesture even if the sample duration is zero (no delayed turn). The Windows bridge rejects negative or non-finite intervals. Added 80,000 deterministic mixed-mode samples across both handedness profiles and four snap settings, plus the existing 20,000 samples. Checks cover fault suppression, contradictory movement, bounded mouse deltas and exclusive tool/two-hand modes. These are planned test iterations, not verified results. No measured performance gain claimed; upstream CPU benchmark failure remains unresolved. Windows and headset validation pending.
