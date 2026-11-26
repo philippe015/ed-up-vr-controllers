@@ -1,4 +1,4 @@
-# ED-UP VR Test Tools v0.9.9 / Outils de test
+# ED-UP VR Test Tools v0.9.10 / Outils de test
 
 This diagnostic installer is independent of the full integrated game build. It installs only the viewer, French configuration utility, sample INI and read-only OpenXR diagnostic under the current user's LocalAppData. No administrator rights, game DLL installation, runtime changes or automatic game launch.
 
