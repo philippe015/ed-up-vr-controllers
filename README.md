@@ -1,4 +1,4 @@
-# ED-UP VR Controllers — v0.9.10 Experimental
+# ED-UP VR Controllers — v0.9.11 Experimental
 
 **By Philou Cyberpunk — Elite Dangerous: Odyssey / Windows 11 x64 / Meta Quest 3 / OpenXR**
 
@@ -6,18 +6,18 @@
 
 ## Installation automatique — outils de test Windows
 
-[![Télécharger Windows x64](https://img.shields.io/badge/TÉLÉCHARGER-WINDOWS%20x64-238636?style=for-the-badge&logo=windows)](https://github.com/philippe015/ed-up-vr-controllers/actions/runs/45893029820/artifacts/15152477208)
+[![Télécharger Windows x64](https://img.shields.io/badge/TÉLÉCHARGER-WINDOWS%20x64-238636?style=for-the-badge&logo=windows)](https://github.com/philippe015/ed-up-vr-controllers/actions/runs/45893629929/artifacts/15152811574)
 
-**[TÉLÉCHARGER L'INSTALLATEUR DE TEST (ZIP)](https://github.com/philippe015/ed-up-vr-controllers/actions/runs/45893029820/artifacts/15152477208)** — connexion GitHub requise, disponible jusqu'au 10 décembre 2026.
+**[TÉLÉCHARGER L'INSTALLATEUR DE TEST (ZIP)](https://github.com/philippe015/ed-up-vr-controllers/actions/runs/45893629929/artifacts/15152811574)** — connexion GitHub requise, disponible jusqu'au 10 décembre 2026.
 
 [Accéder à la compilation de l'installateur de test](https://github.com/philippe015/ed-up-vr-controllers/actions/workflows/windows-test-installer.yml)
 
-Fichier disponible : `ED-UP-VR-Test-Setup-v0.9.10-x64.exe`. Assistant FR/EN, installation sans administrateur dans LocalAppData, raccourcis, visualiseur simulé, diagnostic OpenXR en lecture seule, panneau de configuration (Python 3.10+ requis) et désinstallation. Le workflow compile les outils, exécute CTest et vérifie installation/désinstallation avant publication de l'artefact. Compilation Windows et tests d'installation/désinstallation réussis le 26 novembre 2026. **Cet installateur ne modifie aucune DLL du jeu et ne permet pas à lui seul de jouer en VR avec les nouvelles commandes.** Le patch complet exige encore validation du build et du conditionnement.
+Fichier disponible : `ED-UP-VR-Test-Setup-v0.9.11-x64.exe`. Assistant FR/EN, installation sans administrateur dans LocalAppData, raccourcis, visualiseur simulé, diagnostic OpenXR en lecture seule, panneau de configuration (Python 3.10+ requis) et désinstallation. Le workflow compile les outils, exécute CTest et vérifie installation/désinstallation avant publication de l'artefact. Compilation Windows et tests d'installation/désinstallation réussis le 26 novembre 2026. **Cet installateur ne modifie aucune DLL du jeu et ne permet pas à lui seul de jouer en VR avec les nouvelles commandes.** Le patch complet exige encore validation du build et du conditionnement.
 
 ### Comment installer : double-cliquer sur le programme
 
 1. Télécharger le ZIP ci-dessus, puis faire **Extraire tout** dans Windows.
-2. Ouvrir le dossier extrait et double-cliquer sur `ED-UP-VR-Test-Setup-v0.9.10-x64.exe`. Vérifier la provenance et l'empreinte SHA-256 fournie avant exécution. L'installateur n'est pas signé ; Windows SmartScreen peut afficher un avertissement.
+2. Ouvrir le dossier extrait et double-cliquer sur `ED-UP-VR-Test-Setup-v0.9.11-x64.exe`. Vérifier la provenance et l'empreinte SHA-256 fournie avant exécution. L'installateur n'est pas signé ; Windows SmartScreen peut afficher un avertissement.
 3. Choisir **Français** ou **English** dans l'assistant.
 4. Lire et accepter l'information sur la portée expérimentale des outils. Suivre les étapes de l'assistant, choisir éventuellement le raccourci bureau et cliquer sur **Installer**.
 5. Les outils sont copiés automatiquement dans `%LOCALAPPDATA%\EDUP-VR-Test-Tools`, sans droits administrateur ni modification des DLL du jeu.
@@ -47,7 +47,11 @@ Sélection directe expérimentale : maintenir le grip de soutien, puis pousser l
 
 ### v0.9.11 — SteamVR et OpenXR (en validation)
 
-Nouvel onglet SteamVR / OpenXR : détection en lecture seule du runtime configuré, identification indicative SteamVR, Meta ou VDXR, contrôle du manifeste et de la présence de sa DLL. Le choix du runtime reste dans les paramètres du logiciel VR. Pas de détection physique des manettes ni validation en jeu à ce stade. Les profils Index, Vive et Pico restent à développer. Le téléchargement v0.9.10 reste la version vérifiée en attendant les résultats.
+Nouvel onglet SteamVR / OpenXR : détection en lecture seule du runtime configuré, identification indicative SteamVR, Meta ou VDXR, contrôle du manifeste et de la présence de sa DLL. Le choix du runtime reste dans les paramètres du logiciel VR. Pas de détection physique des manettes ni validation en jeu à ce stade. Les profils Index, Vive et Pico restent à développer. La compilation et les tests de l'installateur v0.9.11 ont réussi.
+
+### v0.9.12 — Valve Index (expérimental)
+
+Profil OpenXR Valve Index ajouté aux sources : boutons A/B des deux mains, sticks, gâchettes, grip analogique, poses et vibrations. Les profils Touch restent inchangés. La compilation du module Windows et les tests sur casque restent à vérifier. Le téléchargement de diagnostic validé reste v0.9.11. [Suivi des compilations](https://github.com/philippe015/ed-up-vr-controllers/actions).
 
 ## 1. Présentation et possibilités
 
