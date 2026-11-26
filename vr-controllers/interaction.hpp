@@ -3,7 +3,7 @@
 #include "virtual_hands.hpp"
 namespace edup::vrinput::foot {
 // Feedback acknowledges Windows input submission, never a game-side result.
-struct InteractionReport {Keys pressed{};bool pointing=false;};
+struct InteractionReport {Keys pressed{};bool pointing=false;ControlMode mode=ControlMode::Neutral;};
 struct Cue {bool left=false,right=false;};
 inline Cue cues(const Keys& pressed){
  return {pressed[EnergyLink]||pressed[ProfileAnalyser]||pressed[Flashlight],
