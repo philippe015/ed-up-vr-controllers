@@ -1,3 +1,9 @@
+# v0.9.8 — Performance & Stability (experimental)
+
+The mapper skips dispatch when key states are unchanged, rejects intervals at or above 100 ms, and consumes a snap gesture even if the sample duration is zero (no delayed turn). The Windows bridge rejects negative or non-finite intervals. Added 80,000 deterministic mixed-mode samples across both handedness profiles and four snap settings, plus the existing 20,000 samples. Checks cover fault suppression, contradictory movement, bounded mouse deltas and exclusive tool/two-hand modes. These are planned test iterations, not verified results. No measured performance gain claimed; upstream CPU benchmark failure remains unresolved. Windows and headset validation pending.
+
+---
+
 # v0.9.7 — Controller diagnostics (experimental)
 
 The local desktop hands viewer displays the mapper mode and handedness from the actual bridge report. Snapshot protocol v3 uses a separate EDUPHands09 channel; use matching viewer and runtime binaries. Old viewers cannot connect to the new channel. Headset wireframe rendering remains as before; mode labels are desktop only, not an in-headset wrist menu. No game-side equipment status is inferred. The local channel remains optional and nonblocking. Protocol validation rejects unknown modes and invalid handedness. Automated and Windows tests pending.
