@@ -2,6 +2,8 @@
 
 **By Philou Cyberpunk — Elite Dangerous: Odyssey / Windows 11 x64 / Meta Quest 3 / OpenXR**
 
+**Français** | [English — Full installation and user guide](README.en.md)
+
 > Prototype non officiel. Aucun installateur complet validé disponible à ce jour. La compilation intégrale et les essais sur casque réel restent à confirmer.
 
 **[ACCÉDER À LA COMPILATION ET AU FUTUR ZIP DE TEST WINDOWS](https://github.com/philippe015/ed-up-vr-controllers/actions/workflows/integrated-windows.yml?query=branch%3Afeature%2Fonfoot-vr-enhanced)**
