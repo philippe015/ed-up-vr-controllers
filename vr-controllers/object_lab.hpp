@@ -1,5 +1,6 @@
 #pragma once
 #include "virtual_hands.hpp"
+#include <initializer_list>
 namespace edup::vrinput::hands {
 inline Quat compose(Quat a,Quat b){
  return {a.w*b.x+a.x*b.w+a.y*b.z-a.z*b.y,a.w*b.y-a.x*b.z+a.y*b.w+a.z*b.x,
