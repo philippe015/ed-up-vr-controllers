@@ -2,6 +2,7 @@
 #include <openxr/openxr.h>
 #include <array>
 #include "safety.hpp"
+#include "controller_profiles.hpp"
 namespace edup::vrinput {
 struct Hand {
  bool tracked=false, ready=false, primary=false, secondary=false, stickClick=false;
@@ -39,6 +40,6 @@ private:
 #define DECL(n) PFN_xr##n n##_=nullptr;
  EDUP_XR_FUNCS(DECL)
 #undef DECL
- XrResult suggest(const char* profile, bool simple);
+ XrResult suggest(ProfileKind profile);
 };
 }
