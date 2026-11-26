@@ -11,7 +11,7 @@ ACTIONS = [
  ('Bindings','Jump','Sauter',0x39),('Bindings','Interact','Interagir',0x12),('Bindings','Crouch','Accroupissement',0x2e),('Bindings','Sprint','Courir',0x2a),
  ('Bindings','CycleTool','Changer d’équipement',0x10),('Bindings','Reload','Recharger',0x13),('Bindings','Primary','Action principale',256),('Bindings','Secondary','Action secondaire',257),
  ('Tools','EnergyLink','Transfert d’énergie',0),('Tools','ProfileAnalyser','Analyseur de profil',0),('Tools','SuitTool','Outil de combinaison',0),('Tools','Holster','Ranger équipement',0),('Tools','Flashlight','Lampe',0),('Tools','ToolMode','Mode de l’outil',0)]
-OPTIONS = [('MotionAim','Enabled','Visée par mouvement',1,0,1),('MotionAim','TwoHandEnabled','Visée à deux mains (expérimentale)',0,0,1),('Movement','LeftHanded','Profil gaucher (inverse les manettes)',0,0,1),('MotionAim','PixelsPerDegree','Sensibilité main (px/degré)',10,1,30),('MotionAim','InvertY','Inverser axe vertical',0,0,1),('Movement','SnapMode','Rotation : 0 fluide, 1/2/3 = 15/30/45° indicatifs',0,0,3),('Movement','SnapPixelsPerDegree','Calibration rotation (px/degré)',10,1,30),('Movement','ExtraLookDeadzonePercent','Zone morte supplémentaire visée (%)',0,0,40),('Movement','LookPixelsPerSecond','Sensibilité stick (px/s)',900,0,3000),('Movement','ToolLayer','Couche outils (grip non dominant)',1,0,1),('Visual','Hands','Canal visualiseur local',0,0,1),('Visual','Overlay','Mains dans le casque',0,0,1),('Visual','Laser','Pointeur visuel',0,0,1),('Visual','Haptics','Vibrations',0,0,1),('Visual','HapticPercent','Intensité vibration (%)',25,0,100)]
+OPTIONS = [('MotionAim','Enabled','Visée par mouvement',1,0,1),('MotionAim','TwoHandEnabled','Visée à deux mains (expérimentale)',0,0,1),('Movement','LeftHanded','Profil gaucher (inverse les manettes)',0,0,1),('MotionAim','PixelsPerDegree','Sensibilité main (px/degré)',10,1,30),('MotionAim','InvertY','Inverser axe vertical',0,0,1),('Movement','SnapMode','Rotation : 0 fluide, 1/2/3 = 15/30/45° indicatifs',0,0,3),('Movement','SnapPixelsPerDegree','Calibration rotation (px/degré)',10,1,30),('Movement','ExtraLookDeadzonePercent','Zone morte supplémentaire visée (%)',0,0,40),('Movement','LookPixelsPerSecond','Sensibilité stick (px/s)',900,0,3000),('Movement','ToolLayer','Couche outils (grip non dominant)',1,0,1),('Movement','StrictTools','Sélection outils sécurisée (retour au neutre)',0,0,1),('Visual','Hands','Canal visualiseur local',0,0,1),('Visual','Overlay','Mains dans le casque',0,0,1),('Visual','Laser','Pointeur visuel',0,0,1),('Visual','Haptics','Vibrations',0,0,1),('Visual','HapticPercent','Intensité vibration (%)',25,0,100)]
 KEYS = {0:'Désactivé',256:'Souris gauche',257:'Souris droite',0x01:'Échap',0x0e:'Retour arrière',0x0f:'Tab',0x1c:'Entrée',0x1d:'Ctrl gauche',0x2a:'Maj gauche',0x36:'Maj droite',0x38:'Alt gauche',0x39:'Espace'}
 for start, labels in [(2,'1234567890'),(0x10,'AZERTYUIOP'),(0x1e,'QSDFGHJKLM'),(0x2c,'WXCVBN')]:
  for offset,label in enumerate(labels): KEYS[start+offset]=label
@@ -21,6 +21,13 @@ for i in range(1,13):
 def label(v): return f'{KEYS.get(v,"Code physique")} [0x{v:02X}]'
 def defaults():
  return {(s,k):v for s,k,_,v in ACTIONS}|{(s,k):v for s,k,_,v,_,_ in OPTIONS}
+def tool_preset(values):
+ # Explicit example, not detected game bindings. Validate before altering the form.
+ proposed=dict(values)
+ for key,code in zip(('EnergyLink','ProfileAnalyser','SuitTool','Holster','Flashlight','ToolMode'),(4,5,6,0x23,0x14,0x32)):
+  proposed['Tools',key]=code
+ return validate(proposed)
+
 def validate(values):
  seen={}
  for s,k,title,_ in ACTIONS:
@@ -69,7 +76,7 @@ def save(path,values):
 def main():
  import tkinter as tk
  from tkinter import ttk,filedialog,messagebox
- root=tk.Tk();root.title('ED-UP VR Control Center v0.9.5 — Philou Cyberpunk');root.geometry('840x760');root.minsize(720,640)
+ root=tk.Tk();root.title('ED-UP VR Control Center v0.9.6 — Philou Cyberpunk');root.geometry('840x760');root.minsize(720,640)
  style=ttk.Style(root);style.theme_use('clam');style.configure('Header.TLabel',font=('Segoe UI',18,'bold'));style.configure('TButton',padding=6)
  body=ttk.Frame(root,padding=16);body.pack(fill='both',expand=True)
  ttk.Label(body,text='ED-UP VR CONTROL CENTER',style='Header.TLabel').pack(anchor='w');ttk.Label(body,text='Odyssey à pied • Meta Quest 3 • OpenXR • Configuration locale').pack(anchor='w',pady=(0,12))
@@ -101,6 +108,11 @@ def main():
  def collect():
   vals={(s,k):int(vars[s,k].get().rsplit('[0x',1)[1][:-1],16) for s,k,_,_ in ACTIONS}
   vals.update({(s,k):vars[s,k].get() for s,k,_,_,_,_ in OPTIONS});return validate(vals)
+ def preset_tools():
+  try:
+   if not messagebox.askyesno('Préréglage Odyssey','Appliquer les six touches exemples 3, 4, 5, H, T, M ? Reproduisez ces liaisons dans le jeu. Aucun fichier ne sera écrit avant Enregistrer.'):return
+   apply(tool_preset(collect()));status.set('Préréglage outils chargé, non enregistré.');check()
+  except Exception as e:messagebox.showerror('Préréglage impossible',str(e))
  def browse():
   folder=filedialog.askdirectory(title='Dossier contenant EliteDangerous64.exe')
   if not folder:return
@@ -121,5 +133,5 @@ def main():
    save(Path(path.get()),collect());status.set('Profil enregistré ; ancienne version sauvegardée si présente.');check()
   except Exception as e:messagebox.showerror('Enregistrement impossible',str(e))
  ttk.Button(row,text='Choisir dossier…',command=browse).pack(side='left',padx=(8,0))
- buttons=ttk.Frame(body);buttons.pack(fill='x');ttk.Button(buttons,text='Vérifier',command=check).pack(side='left');ttk.Button(buttons,text='Réinitialiser le formulaire',command=lambda:(apply(defaults()),status.set('Valeurs par défaut non enregistrées.'))).pack(side='left',padx=8);ttk.Button(buttons,text='Enregistrer',command=write).pack(side='right');ttk.Label(body,textvariable=status,wraplength=730).pack(anchor='w',pady=(10,0));root.mainloop()
+ buttons=ttk.Frame(body);buttons.pack(fill='x');ttk.Button(buttons,text='Vérifier',command=check).pack(side='left');ttk.Button(buttons,text='Préréglage outils',command=preset_tools).pack(side='left',padx=8);ttk.Button(buttons,text='Réinitialiser le formulaire',command=lambda:(apply(defaults()),status.set('Valeurs par défaut non enregistrées.'))).pack(side='left',padx=8);ttk.Button(buttons,text='Enregistrer',command=write).pack(side='right');ttk.Label(body,textvariable=status,wraplength=730).pack(anchor='w',pady=(10,0));root.mainloop()
 if __name__=='__main__':main()
