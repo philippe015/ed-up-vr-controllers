@@ -80,7 +80,7 @@ struct WindowsBridge::Impl {
  void watch(){for(;;){std::this_thread::sleep_for(std::chrono::milliseconds(10));std::lock_guard<std::mutex> l(mutex);if(quit)return;if((active&&(sampleExpired(GetTickCount64(),lastTick)||!focus()))||(!active&&sent.any())){if(!release())fault=true;}}}
  InteractionReport submit(const Sample& sample){std::lock_guard<std::mutex> l(mutex);auto now=Clock::now();float dt=active?std::chrono::duration<float>(now-last).count():0;last=now;lastTick=GetTickCount64();
   if(!sample.enabled||!sample.focused||!focus()||fault||!sample.hand[0].ready||!sample.hand[1].ready){if(!release())fault=true;if(!sample.enabled&&sent.none())fault=false;return {};}
-  if(dt>=.1f){if(!release())fault=true;return {};}
+  if(!std::isfinite(dt)||dt<0||dt>=.1f){if(!release())fault=true;return {};}
   active=true;auto out=mapper.update(sample,dt);const Keys before=sent;
   if(!dispatch(sent,out.held,[this](Action a,bool d){return send(a,d);})){fault=true;release();return {};}
   if(out.dx||out.dy){if(!focus()){if(!release())fault=true;return {};}
