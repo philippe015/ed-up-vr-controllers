@@ -12,9 +12,11 @@
 
 ### Installation automatique — outils de test Windows
 
+**[TÉLÉCHARGER L'INSTALLATEUR DE TEST (ZIP)](https://github.com/philippe015/ed-up-vr-controllers/actions/runs/45866178749/artifacts/15139264119)** — connexion GitHub requise, disponible jusqu'au 10 décembre 2026.
+
 [Accéder à la compilation de l'installateur de test](https://github.com/philippe015/ed-up-vr-controllers/actions/workflows/windows-test-installer.yml)
 
-Nom prévu : `ED-UP-VR-Test-Setup-v0.9.9-x64.exe`. Assistant FR/EN, installation sans administrateur dans LocalAppData, raccourcis, visualiseur simulé, diagnostic OpenXR en lecture seule, panneau de configuration (Python 3.10+ requis) et désinstallation. Le workflow compile les outils, exécute CTest et vérifie installation/désinstallation avant publication de l'artefact. Compilation non encore confirmée. **Cet installateur ne modifie aucune DLL du jeu et ne permet pas à lui seul de jouer en VR avec les nouvelles commandes.** Le patch complet exige encore validation du build et du conditionnement.
+Nom prévu : `ED-UP-VR-Test-Setup-v0.9.9-x64.exe`. Assistant FR/EN, installation sans administrateur dans LocalAppData, raccourcis, visualiseur simulé, diagnostic OpenXR en lecture seule, panneau de configuration (Python 3.10+ requis) et désinstallation. Le workflow compile les outils, exécute CTest et vérifie installation/désinstallation avant publication de l'artefact. Compilation Windows et tests d'installation/désinstallation réussis le 26 novembre 2026. **Cet installateur ne modifie aucune DLL du jeu et ne permet pas à lui seul de jouer en VR avec les nouvelles commandes.** Le patch complet exige encore validation du build et du conditionnement.
 
 ## 1. Présentation et possibilités
 
