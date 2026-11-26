@@ -33,7 +33,7 @@ public:
  Output reset(){held_.reset();armed_=false;tools_=layerReady_=chordBlocked_=false;remX_=remY_=0;motion_.reset();clutch_=false;twoFilter_.reset();twoMotion_.reset();twoActive_=false;twoTime_=0;snapReady_=false;return {};}
  Output update(const Sample& s,float dt){
   const auto& l=s.hand[cfg_.leftHanded?1:0];const auto& r=s.hand[cfg_.leftHanded?0:1];
-  if(!s.enabled||!s.focused||!valid(l)||!valid(r)||!std::isfinite(dt)||dt<0||dt>.1f)return reset();
+  if(!s.enabled||!s.focused||!valid(l)||!valid(r)||!std::isfinite(dt)||dt<0||dt>=.1f)return reset();
   if(!armed_){armed_=neutral(l)&&neutral(r);layerReady_=armed_;return {};}
   // Experimental mode: dominant grip first, then support grip. Support grip alone selects tools.
   if(twoActive_ || (cfg_.twoHandAim && cfg_.motionAim && !tools_ && layerReady_ && clutch_ && r.squeeze>=.70f && l.squeeze>=.70f)){
@@ -97,8 +97,8 @@ public:
    // Never queue turns or repeat while held. Actual game angle depends on sensitivity.
    remX_=0;
    if(std::abs(r.x)<=.20f)snapReady_=true;
-   if(dt>0 && std::abs(r.x)>=.75f && snapReady_){
-    snapReady_=false;out.dx=(r.x>0?1:-1)*int(15*cfg_.snapMode*cfg_.snapPixelsPerDegree);
+   if(std::abs(r.x)>=.75f && snapReady_){
+    snapReady_=false;if(dt>0)out.dx=(r.x>0?1:-1)*int(15*cfg_.snapMode*cfg_.snapPixelsPerDegree);
    }
   }else remX_+=x*cfg_.lookPixelsPerSecond*dt;
   remY_+=y*cfg_.lookPixelsPerSecond*dt*(cfg_.invertY?1.f:-1.f);
@@ -109,6 +109,8 @@ public:
 };
 // Only transitions are emitted. A held action is not a stream of repeated key presses.
 template<class Sink> bool dispatch(Keys& sent,const Keys& desired,Sink&& sink){
+ // No OS transitions are necessary when all held states are unchanged.
+ if(sent==desired)return true;
  bool ok=true;
  // Release first; never press if any release failed.
  for(unsigned i=0;i<Count;++i)if(sent[i]&&!desired[i]){if(sink(static_cast<Action>(i),false))sent.reset(i);else ok=false;}
