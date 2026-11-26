@@ -45,6 +45,10 @@ Experimental direct selection: hold the support grip and deflect the dominant st
 
 [v0.9.10 technical notes](https://github.com/philippe015/ed-up-vr-controllers/blob/feature/onfoot-vr-enhanced/vr-controllers/README.md)
 
+### v0.9.11 — SteamVR and OpenXR (validation pending)
+
+New SteamVR / OpenXR tab: read-only configured runtime detection, indicative SteamVR, Meta or VDXR identification, manifest and runtime DLL presence checks. Runtime selection remains in the VR software settings. Physical controller connectivity and gameplay are not validated. Index, Vive and Pico profiles remain future work. The v0.9.10 download remains the verified version pending new results.
+
 ## 1. Overview and features
 
 This community project extends [ED Unofficial Patch](https://github.com/characterecho-sean/ed-unofficial-patch) with VR controller input for Odyssey on-foot gameplay. The following features are implemented in experimental source code; their operation in the game and headset still requires validation.
