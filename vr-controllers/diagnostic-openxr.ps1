@@ -1,6 +1,6 @@
 param([string]$GameFolder = '')
 $ErrorActionPreference = 'Stop'
-$report = [ordered]@{ Version='0.9.11'; Provider='Non détecté'; LibraryPath=$null; Date=(Get-Date).ToString('o'); Windows=[Environment]::OSVersion.VersionString; OS64=[Environment]::Is64BitOperatingSystem; Process64=[Environment]::Is64BitProcess; Runtime=$null; Source=$null; ManifestExists=$false; ManifestValid=$false; RuntimeLibraryExists=$false; GameExe=$null; Config=$null; Notes=@() }
+$report = [ordered]@{ Version='0.9.15'; Provider='Non détecté'; LibraryPath=$null; Date=(Get-Date).ToString('o'); Windows=[Environment]::OSVersion.VersionString; OS64=[Environment]::Is64BitOperatingSystem; Process64=[Environment]::Is64BitProcess; Runtime=$null; Source=$null; ManifestExists=$false; ManifestValid=$false; RuntimeLibraryExists=$false; GameExe=$null; Config=$null; Notes=@() }
 try {
  if ($env:XR_RUNTIME_JSON) { $report.Runtime=$env:XR_RUNTIME_JSON; $report.Source='XR_RUNTIME_JSON (override)' }
  else {
@@ -9,9 +9,10 @@ try {
  }
  if ($report.Runtime -and (Test-Path -LiteralPath $report.Runtime -PathType Leaf)) {
   $report.ManifestExists=$true
+  if ((Get-Item -LiteralPath $report.Runtime).Length -gt 1048576) {throw 'Manifest trop volumineux (limite 1 Mio)'}
   $manifest=Get-Content -LiteralPath $report.Runtime -Raw | ConvertFrom-Json
   $lib=$manifest.runtime.library_path
-  if ($lib -and $manifest.file_format_version) {
+  if ($lib -is [string] -and -not [string]::IsNullOrWhiteSpace($lib) -and $manifest.file_format_version -is [string] -and -not [string]::IsNullOrWhiteSpace($manifest.file_format_version)) {
    $report.ManifestValid=$true
    if(-not [IO.Path]::IsPathRooted($lib)){$lib=Join-Path (Split-Path -Parent $report.Runtime) $lib}
    $report.LibraryPath=$lib
