@@ -24,7 +24,7 @@ class HostOnFoot {
  void publishHands(XrTime t,const InteractionReport& report,const Sample& sample){
   if(!handsEnabled_&&!overlayEnabled_)return;hands::Snapshot out;const bool headValid=sample.headTracked;const auto& head=sample.head;
   if(headValid)for(unsigned i=0;i<2;++i){const auto& h=core_.hands()[i];if(h.tracked&&h.ready)hands::set(out,i,hands::make(convert(h.grip),head,i==0,h.trigger,h.squeeze));}
-  out.controlMode=static_cast<uint32_t>(report.mode);out.leftHanded=leftHanded_?1u:0u;
+  out.controlMode=static_cast<uint32_t>(report.mode);out.leftHanded=leftHanded_?1u:0u;out.radialVisible=headValid&&report.radialVisible?1u:0u;out.radialIndex=out.radialVisible?report.radialIndex:-1;
   if(laserEnabled_&&report.pointing&&out.valid[0]&&out.valid[1]&&pointerRay(convert(core_.hands()[leftHanded_?0:1].aim),head,out.laser))out.laserValid=1;
   if(headValid&&labEnabled_&&labFrame_.visible){out.objectVisible=1;out.objectOwner=labFrame_.owner;out.objectLines=hands::objectWire(labFrame_.object,head);}
   out.tick=GetTickCount64();
@@ -51,7 +51,7 @@ public:
    const auto settings=loadAimSettings(path.c_str());leftHanded_=settings.leftHanded;
    bridge_=std::make_unique<WindowsBridge>(GetCurrentProcessId(),loadToolBindings(path.c_str()),settings);
    if(visual.hands)handsEnabled_=handsChannel_.open(GetCurrentProcessId(),true);
-   labEnabled_=visual.objectLab;overlayEnabled_=visual.overlay||labEnabled_;laserEnabled_=visual.laser;hapticsEnabled_=visual.haptics;hapticStrength_=visual.hapticStrength;
+   labEnabled_=visual.objectLab;overlayEnabled_=visual.overlay||labEnabled_||settings.radialMenu;laserEnabled_=visual.laser;hapticsEnabled_=visual.haptics;hapticStrength_=visual.hapticStrength;
   }catch(...){bridge_.reset();OutputDebugStringW(L"ED-UP VR OnFoot: invalid configuration or bridge unavailable; disabled.\n");}
  }
  void suspend(){clearHands();mode_=false;f10WasDown_=true;core_.neutralize();if(bridge_)bridge_->stop();}
