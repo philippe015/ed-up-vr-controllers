@@ -1,4 +1,6 @@
-# ED-UP VR Controllers — v0.9.14 Experimental
+# ED-UP VR Controllers — v0.9.15 Experimental
+
+**[PROJECT WEBSITE — ODYSSEY ON FOOT IN VR](https://philippe015.github.io/ed-up-vr-controllers/)** (GitHub Pages activation required if not configured) · [HTML source](https://github.com/philippe015/ed-up-vr-controllers/blob/main/docs/index.html)
 
 **By Philou Cyberpunk — Elite Dangerous: Odyssey / Windows 11 x64 / Meta Quest 3 / OpenXR**
 
@@ -6,18 +8,18 @@
 
 ## Automatic Windows test-tools installer
 
-[![Download Windows x64](https://img.shields.io/badge/DOWNLOAD-WINDOWS%20x64-238636?style=for-the-badge&logo=windows)](https://github.com/philippe015/ed-up-vr-controllers/actions/runs/45895233381/artifacts/15153461970)
+[![Download Windows x64](https://img.shields.io/badge/DOWNLOAD-WINDOWS%20x64-238636?style=for-the-badge&logo=windows)](https://github.com/philippe015/ed-up-vr-controllers/actions/runs/45940805688/artifacts/15172224327)
 
-**[DOWNLOAD TEST INSTALLER (ZIP)](https://github.com/philippe015/ed-up-vr-controllers/actions/runs/45895233381/artifacts/15153461970)** — GitHub sign-in required, expires December 10, 2026.
+**[DOWNLOAD TEST INSTALLER (ZIP)](https://github.com/philippe015/ed-up-vr-controllers/actions/runs/45940805688/artifacts/15172224327)** — GitHub sign-in required, expires December 11, 2026.
 
 [Open the test installer build workflow](https://github.com/philippe015/ed-up-vr-controllers/actions/workflows/windows-test-installer.yml)
 
-Filename: `ED-UP-VR-Test-Setup-v0.9.14-x64.exe`. English/French wizard, per-user installation under LocalAppData without elevation, shortcuts, simulated viewer, read-only OpenXR diagnostic, configuration utility (Python 3.10+ required) and uninstall. CI builds the tools, runs CTest and checks installation/uninstallation before uploading the artifact. Windows build and automated install/uninstall tests passed on November 26, 2026. **This setup does not modify game DLLs and does not by itself enable the new in-game VR controls.** Full patch build and packaging validation remain required.
+Filename: `ED-UP-VR-Test-Setup-v0.9.15-x64.exe`. English/French wizard, per-user installation under LocalAppData without elevation, shortcuts, simulated viewer, read-only OpenXR diagnostic, configuration utility (Python 3.10+ required) and uninstall. CI builds the tools, runs CTest and checks installation/uninstallation before uploading the artifact. Windows build and automated install/uninstall tests passed on November 26, 2026. **This setup does not modify game DLLs and does not by itself enable the new in-game VR controls.** Full patch build and packaging validation remain required.
 
 ### How to install: double-click the setup file
 
 1. Download the ZIP above and select **Extract All** in Windows.
-2. Open the extracted directory and double-click `ED-UP-VR-Test-Setup-v0.9.14-x64.exe`. Verify its origin and supplied SHA-256 checksum before running. The setup is unsigned; Windows SmartScreen may display a warning.
+2. Open the extracted directory and double-click `ED-UP-VR-Test-Setup-v0.9.15-x64.exe`. Verify its origin and supplied SHA-256 checksum before running. The setup is unsigned; Windows SmartScreen may display a warning.
 3. Select **English** or **Français** in the setup wizard.
 4. Read and accept the experimental scope notice. Follow the wizard, optionally select the desktop shortcut, then click **Install**.
 5. Setup automatically copies the tools to `%LOCALAPPDATA%\EDUP-VR-Test-Tools` without administrator privileges or changes to game DLLs.
@@ -63,7 +65,7 @@ Patch-owned virtual cube: contact and grip grab, 6DoF translation and rotation, 
 
 ### v0.9.15 quality review
 
-[Quality report and CI evidence](QUALITY-REVIEW.md). v0.9.14 passed both Windows builds, all 13 tests and diagnostic installer checks. v0.9.15 fixes await validation. Raw integrated binaries are not a full installer; headset testing is unconfirmed.
+[Quality report and CI evidence](QUALITY-REVIEW.md). v0.9.14 passed both Windows builds, all 13 tests and diagnostic installer checks. The v0.9.15 diagnostic installer build and tests passed; integrated validation remains pending. Raw integrated binaries are not a full installer; headset testing is unconfirmed.
 
 ## 1. Overview and features
 
