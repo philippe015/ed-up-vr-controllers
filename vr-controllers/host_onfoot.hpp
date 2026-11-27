@@ -16,7 +16,7 @@ namespace edup::vrinput::foot {
 // Optional integration with ED-UP's existing owner thread. No new XR session.
 class HostOnFoot {
  hands::Channel handsChannel_;bool handsEnabled_=false,overlayEnabled_=false,laserEnabled_=false,hapticsEnabled_=false;
- bool leftHanded_=false,labEnabled_=false;hands::ObjectLab lab_;hands::LabFrame labFrame_{};
+ bool leftHanded_=false,labEnabled_=false,wristEnabled_=false;hands::ObjectLab lab_;hands::LabFrame labFrame_{};
  HapticLimiter hapticLimiter_;float hapticStrength_=.25f;
  hands::Snapshot overlay_{};XrTime overlayTime_=0;
  void clearHands(){lab_.reset();labFrame_={};overlay_={};overlayTime_=0;if(handsEnabled_)handsChannel_.write(hands::Snapshot{});}
@@ -25,6 +25,7 @@ class HostOnFoot {
   if(!handsEnabled_&&!overlayEnabled_)return;hands::Snapshot out;const bool headValid=sample.headTracked;const auto& head=sample.head;
   if(headValid)for(unsigned i=0;i<2;++i){const auto& h=core_.hands()[i];if(h.tracked&&h.ready)hands::set(out,i,hands::make(convert(h.grip),head,i==0,h.trigger,h.squeeze));}
   out.controlMode=static_cast<uint32_t>(report.mode);out.leftHanded=leftHanded_?1u:0u;out.radialVisible=headValid&&report.radialVisible?1u:0u;out.radialIndex=out.radialVisible?report.radialIndex:-1;
+  if(wristEnabled_&&out.radialVisible){const auto& l=sample.hand[leftHanded_?1:0];hands::Vec anchor{};if(l.gripTracked&&hands::wristAnchor({float(l.gripPosition.x),float(l.gripPosition.y),float(l.gripPosition.z)},head,anchor)){out.wristVisible=1;out.wristCenter=anchor;}else {out.radialVisible=0;out.radialIndex=-1;}}
   if(laserEnabled_&&report.pointing&&out.valid[0]&&out.valid[1]&&pointerRay(convert(core_.hands()[leftHanded_?0:1].aim),head,out.laser))out.laserValid=1;
   if(headValid&&labEnabled_&&labFrame_.visible){out.objectVisible=1;out.objectOwner=labFrame_.owner;out.objectLines=hands::objectWire(labFrame_.object,head);}
   out.tick=GetTickCount64();
@@ -48,10 +49,10 @@ public:
    if(sep==std::wstring::npos)throw std::runtime_error("game directory unavailable");
    path.resize(sep+1);path+=L"edup-vr-tools.ini";
    const auto visual=loadVisualSettings(path.c_str());
-   const auto settings=loadAimSettings(path.c_str());leftHanded_=settings.leftHanded;
+   const auto settings=loadAimSettings(path.c_str());leftHanded_=settings.leftHanded;wristEnabled_=settings.wristMenu;
    bridge_=std::make_unique<WindowsBridge>(GetCurrentProcessId(),loadToolBindings(path.c_str()),settings);
    if(visual.hands)handsEnabled_=handsChannel_.open(GetCurrentProcessId(),true);
-   labEnabled_=visual.objectLab;overlayEnabled_=visual.overlay||labEnabled_||settings.radialMenu;laserEnabled_=visual.laser;hapticsEnabled_=visual.haptics;hapticStrength_=visual.hapticStrength;
+   labEnabled_=visual.objectLab;overlayEnabled_=visual.overlay||labEnabled_||settings.radialMenu||wristEnabled_;laserEnabled_=visual.laser;hapticsEnabled_=visual.haptics;hapticStrength_=visual.hapticStrength;
   }catch(...){bridge_.reset();OutputDebugStringW(L"ED-UP VR OnFoot: invalid configuration or bridge unavailable; disabled.\n");}
  }
  void suspend(){clearHands();mode_=false;f10WasDown_=true;core_.neutralize();if(bridge_)bridge_->stop();}
@@ -83,7 +84,7 @@ public:
  const hands::Snapshot* overlay(XrTime t,bool eligible,bool focused) const {
   return overlayEnabled_&&mode_&&eligible&&focused&&foregroundGame()&&overlayTime_==t&&hands::fresh(overlay_,GetTickCount64())?&overlay_:nullptr;
  }
- void releaseSession(){suspend();handsChannel_.close();handsEnabled_=false;overlayEnabled_=false;laserEnabled_=false;hapticsEnabled_=false;labEnabled_=false;bridge_.reset();if(initialized_)core_.releaseSession();attached_=false;}
+ void releaseSession(){suspend();handsChannel_.close();handsEnabled_=false;overlayEnabled_=false;laserEnabled_=false;hapticsEnabled_=false;labEnabled_=false;wristEnabled_=false;bridge_.reset();if(initialized_)core_.releaseSession();attached_=false;}
  void shutdown(){if(initialized_)core_.shutdown();initialized_=false;attached_=false;}
 };
 }
