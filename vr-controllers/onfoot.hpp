@@ -9,16 +9,17 @@
 #include "motion_aim.hpp"
 #include "two_hand_pose.h"
 #include "equipment_gestures.hpp"
+#include "radial_menu.hpp"
 namespace edup::vrinput::foot {
 enum Action {Forward, Back, Left, Right, Jump, Interact, Crouch, Sprint, CycleTool, Reload, Primary, Secondary, EnergyLink, ProfileAnalyser, SuitTool, Holster, Flashlight, ToolMode, SelectPrimaryWeapon, SelectSecondaryWeapon, Count};
 using Keys=std::bitset<Count>;
 struct Hand {bool ready=false, primary=false, secondary=false, stickClick=false; float x=0,y=0,trigger=0,squeeze=0; Orientation aim{}; edup::experimental::Vec3 gripPosition{}; bool gripTracked=false;};
 struct Sample {std::array<Hand,2> hand{}; bool enabled=false, focused=false; hands::Pose head{}; bool headTracked=false;};
 enum class ControlMode : uint32_t { Neutral=0, Normal=1, Tools=2, Motion=3, TwoHand=4, Snap=5 };
-struct Output {Keys held{}; int dx=0,dy=0; bool pointing=false; ControlMode mode=ControlMode::Neutral;};
-struct Settings {float moveOn=.55f,moveOff=.35f,triggerOn=.65f,triggerOff=.40f; float lookPixelsPerSecond=900.f; bool invertY=false; bool toolLayer=true; bool motionAim=true; float aimPixelsPerDegree=10.f; bool twoHandAim=false; bool leftHanded=false; unsigned snapMode=0; unsigned snapPixelsPerDegree=10; unsigned extraLookDeadzonePercent=0; bool strictTools=false; bool weaponSelect=false; bool equipmentGestures=false; unsigned equipmentScalePercent=100;};
+struct Output {Keys held{}; int dx=0,dy=0; bool pointing=false; ControlMode mode=ControlMode::Neutral; bool radialVisible=false;int radialIndex=-1;};
+struct Settings {float moveOn=.55f,moveOff=.35f,triggerOn=.65f,triggerOff=.40f; float lookPixelsPerSecond=900.f; bool invertY=false; bool toolLayer=true; bool motionAim=true; float aimPixelsPerDegree=10.f; bool twoHandAim=false; bool leftHanded=false; unsigned snapMode=0; unsigned snapPixelsPerDegree=10; unsigned extraLookDeadzonePercent=0; bool strictTools=false; bool weaponSelect=false; bool equipmentGestures=false; bool radialMenu=false; unsigned equipmentScalePercent=100;};
 class Mapper {
- Settings cfg_; Keys held_; bool armed_=false, tools_=false, layerReady_=false, chordBlocked_=false; float remX_=0,remY_=0; MotionAim motion_; bool clutch_=false; edup::experimental::TwoHandFilter twoFilter_; MotionAim twoMotion_; bool twoActive_=false; double twoTime_=0; bool snapReady_=false; bool weaponBusy_=false,weaponConsumed_=false; EquipmentGesture equipment_; bool gestureLocked_=false,gestureInhibit_=false; EquipmentZone gestureZone_=EquipmentZone::None; Action gestureAction_=Count; float gesturePulse_=0;
+ Settings cfg_; Keys held_; bool armed_=false, tools_=false, layerReady_=false, chordBlocked_=false; float remX_=0,remY_=0; MotionAim motion_; bool clutch_=false; edup::experimental::TwoHandFilter twoFilter_; MotionAim twoMotion_; bool twoActive_=false; double twoTime_=0; bool snapReady_=false; bool weaponBusy_=false,weaponConsumed_=false; EquipmentGesture equipment_; bool gestureLocked_=false,gestureInhibit_=false; EquipmentZone gestureZone_=EquipmentZone::None; Action gestureAction_=Count; float gesturePulse_=0; RadialMenu radial_; Action radialAction_=Count;float radialPulse_=0;
  bool hysteresis(Action a,float value,float on,float off) const {return value>=(held_[a]?off:on);}
  static bool valid(const Hand& h){return h.ready&&analogValid(h.x,-1.f,1.f)&&analogValid(h.y,-1.f,1.f)&&analogValid(h.trigger,0.f,1.f)&&analogValid(h.squeeze,0.f,1.f);}
  static bool neutral(const Hand& h){return std::abs(h.x)<.10f&&std::abs(h.y)<.10f&&h.trigger<.05f&&h.squeeze<.05f&&!h.primary&&!h.secondary&&!h.stickClick;}
@@ -32,7 +33,7 @@ public:
   cfg_.equipmentScalePercent=std::clamp(cfg_.equipmentScalePercent,70u,130u);
   cfg_.aimPixelsPerDegree=std::clamp(safe(cfg_.aimPixelsPerDegree,10.f),1.f,30.f);
  }
- Output reset(){held_.reset();armed_=false;tools_=layerReady_=chordBlocked_=false;remX_=remY_=0;motion_.reset();clutch_=false;twoFilter_.reset();twoMotion_.reset();twoActive_=false;twoTime_=0;snapReady_=false;weaponBusy_=weaponConsumed_=false;equipment_.reset();gestureLocked_=gestureInhibit_=false;gestureZone_=EquipmentZone::None;gestureAction_=Count;gesturePulse_=0;return {};}
+ Output reset(){held_.reset();armed_=false;tools_=layerReady_=chordBlocked_=false;remX_=remY_=0;motion_.reset();clutch_=false;twoFilter_.reset();twoMotion_.reset();twoActive_=false;twoTime_=0;snapReady_=false;weaponBusy_=weaponConsumed_=false;equipment_.reset();gestureLocked_=gestureInhibit_=false;gestureZone_=EquipmentZone::None;gestureAction_=Count;gesturePulse_=0;radial_.reset();radialAction_=Count;radialPulse_=0;return {};}
  Output update(const Sample& s,float dt){
   const auto& l=s.hand[cfg_.leftHanded?1:0];const auto& r=s.hand[cfg_.leftHanded?0:1];
   if(!s.enabled||!s.focused||!valid(l)||!valid(r)||!std::isfinite(dt)||dt<0||dt>=.1f)return reset();
@@ -59,7 +60,7 @@ public:
   }
   // Left grip is a physical modifier, not a game action. Hysteresis prevents chatter.
   const bool nextTools=cfg_.toolLayer && l.squeeze>=(tools_?.40f:.70f);
-  if(nextTools!=tools_){tools_=nextTools;layerReady_=false;chordBlocked_=false;weaponBusy_=weaponConsumed_=false;equipment_.reset();gestureLocked_=gestureInhibit_=false;gestureZone_=EquipmentZone::None;gestureAction_=Count;gesturePulse_=0;held_.reset();remX_=remY_=0;motion_.reset();clutch_=false;snapReady_=false;return {};}
+  if(nextTools!=tools_){tools_=nextTools;layerReady_=false;chordBlocked_=false;weaponBusy_=weaponConsumed_=false;equipment_.reset();gestureLocked_=gestureInhibit_=false;gestureZone_=EquipmentZone::None;gestureAction_=Count;gesturePulse_=0;radial_.reset();radialAction_=Count;radialPulse_=0;held_.reset();remX_=remY_=0;motion_.reset();clutch_=false;snapReady_=false;return {};}
   auto layerNeutral=[&]{Hand left=l;if(tools_)left.squeeze=0;return neutral(left)&&neutral(r);};
   if(!layerReady_){layerReady_=layerNeutral();return {};}
   if(tools_){
@@ -67,6 +68,22 @@ public:
    const std::array<bool,6> buttons={l.primary,l.secondary,r.primary,r.secondary,l.stickClick,r.stickClick};
    const std::array<Action,6> actions={EnergyLink,ProfileAnalyser,SuitTool,Holster,Flashlight,ToolMode};
    unsigned n=0,selected=0;for(unsigned i=0;i<buttons.size();++i)if(buttons[i]){++n;selected=i;}
+   // Optional radial replaces stick weapon selection; button/gesture paths remain available.
+   if(cfg_.radialMenu&&(radial_.active()||(!gestureLocked_&&r.squeeze<.05f&&(std::abs(r.x)>=.20f||std::abs(r.y)>=.20f)))){
+    Output o;o.mode=ControlMode::Tools;
+    const bool clean=s.headTracked&&l.trigger<.05f&&r.trigger<.05f&&r.squeeze<.05f&&
+      std::abs(l.x)<.10f&&std::abs(l.y)<.10f&&!l.primary&&!l.secondary&&!l.stickClick&&!r.secondary&&!r.stickClick&&
+      !gestureLocked_&&!chordBlocked_&&!weaponBusy_&&(held_.none()||(radialAction_!=Count&&held_[radialAction_]));
+    auto menu=radial_.update(r.x,r.y,r.primary,clean,dt);
+    if(!clean||!radial_.active()){radialAction_=Count;radialPulse_=0;}
+    if(menu.confirmed>=0){
+     constexpr Action choices[]={SelectPrimaryWeapon,EnergyLink,ProfileAnalyser,SuitTool,SelectSecondaryWeapon,Holster,Flashlight,ToolMode};
+     radialAction_=choices[menu.confirmed];radialPulse_=.08f;
+    }
+    if(radialPulse_>0&&clean&&radialAction_!=Count&&r.primary){o.held[radialAction_]=true;radialPulse_-=dt;}
+    else {radialAction_=Count;radialPulse_=0;}
+    o.radialVisible=menu.visible;o.radialIndex=menu.sector;held_=o.held;return o;
+   }
    // Explicit support grip first, then dominant grip inside a virtual equipment zone.
    // No actions from other layers while this gesture is active.
    if(cfg_.equipmentGestures&&(gestureLocked_||r.squeeze>=.70f)){
