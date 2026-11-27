@@ -43,6 +43,8 @@ jobs:
           cmake --build build-tools --config Release
           if ($LASTEXITCODE -ne 0) { throw 'Compile failed' }
           ctest --test-dir build-tools -C Release --output-on-failure
+          if ($LASTEXITCODE -ne 0) { throw 'CTest failed' }
+          Select-String -LiteralPath build-tools/Testing/Temporary/LastTest.log -Pattern 'prepared CPU ms=','reference CPU ms=' | ForEach-Object { Write-Output $_.Line }
           if ($LASTEXITCODE -ne 0) { throw 'Tests failed' }
       - name: Stage allowlisted diagnostic files and build setup
         run: |
