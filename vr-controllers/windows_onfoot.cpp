@@ -53,6 +53,7 @@ Settings loadAimSettings(const wchar_t* path){
  s.extraLookDeadzonePercent=readNumber(path,L"Movement",L"ExtraLookDeadzonePercent",L"0",40);
  s.equipmentGestures=readNumber(path,L"Movement",L"EquipmentGestures",L"0",1)!=0;
  s.equipmentScalePercent=readNumber(path,L"Movement",L"EquipmentScalePercent",L"100",130);if(s.equipmentScalePercent<70)throw std::invalid_argument("invalid equipment scale");
+ s.wristMenu=readNumber(path,L"Movement",L"WristMenu",L"0",1)!=0;
  s.radialMenu=readNumber(path,L"Movement",L"RadialMenu",L"0",1)!=0;
  s.weaponSelect=readNumber(path,L"Movement",L"WeaponSelect",L"0",1)!=0;
  s.strictTools=readNumber(path,L"Movement",L"StrictTools",L"0",1)!=0;
