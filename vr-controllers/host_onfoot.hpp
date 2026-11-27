@@ -18,8 +18,8 @@ class HostOnFoot {
  hands::Channel handsChannel_;bool handsEnabled_=false,overlayEnabled_=false,laserEnabled_=false,hapticsEnabled_=false;
  bool leftHanded_=false,labEnabled_=false,wristEnabled_=false,needsHead_=false,handsPublished_=false;hands::ObjectLab lab_;hands::LabFrame labFrame_{};
  HapticLimiter hapticLimiter_;float hapticStrength_=.25f;
- hands::Snapshot overlay_{};XrTime overlayTime_=0;
- void clearHands(){lab_.reset();labFrame_={};overlay_={};overlayTime_=0;if(handsEnabled_&&handsPublished_&&handsChannel_.write(hands::Snapshot{}))handsPublished_=false;}
+ hands::Snapshot overlay_{};XrTime overlayTime_=0;hands::MenuReceipt menuReceipt_{};
+ void clearHands(){menuReceipt_={};lab_.reset();labFrame_={};overlay_={};overlayTime_=0;if(handsEnabled_&&handsPublished_&&handsChannel_.write(hands::Snapshot{}))handsPublished_=false;}
  static hands::Pose convert(const XrPosef& p){return {{p.position.x,p.position.y,p.position.z},{p.orientation.x,p.orientation.y,p.orientation.z,p.orientation.w}};}
  void publishHands(XrTime t,const InteractionReport& report,const Sample& sample){
   if(!handsEnabled_&&!overlayEnabled_)return;hands::Snapshot out;const bool headValid=sample.headTracked;const auto& head=sample.head;
@@ -61,11 +61,11 @@ public:
   if(!bridge_||!attached_)return;
   if(!eligible||!focused||!foregroundGame()){suspend();return;}
   const bool down=(GetAsyncKeyState(VK_F10)&0x8000)!=0;
-  if(down&&!f10WasDown_){mode_=!mode_;core_.neutralize();bridge_->submit(Sample{});}
+  if(down&&!f10WasDown_){menuReceipt_={};mode_=!mode_;core_.neutralize();bridge_->submit(Sample{});}
   f10WasDown_=down;
   if(!mode_){clearHands();return;}
   if(core_.poll(true,base,t)!=XR_SUCCESS){suspend();return;}
-  auto sample=fromCore(core_,true,true);XrPosef head{};
+  auto sample=fromCore(core_,true,true);sample.renderedRadialSector=menuReceipt_.consume(t,GetTickCount64());XrPosef head{};
   if(needsHead_&&core_.locateHead(view,base,t,head)){sample.head=convert(head);sample.headTracked=true;}
   InteractionReport report{};
   if(labEnabled_){
@@ -85,6 +85,10 @@ public:
  }
  const hands::Snapshot* overlay(XrTime t,bool eligible,bool focused) const {
   return overlayEnabled_&&mode_&&eligible&&focused&&foregroundGame()&&overlayTime_==t&&hands::fresh(overlay_,GetTickCount64())?&overlay_:nullptr;
+ }
+ void recordMenuDraw(const hands::Snapshot* snapshot,hands::MenuReceipt draw,XrTime t,bool success){
+  menuReceipt_={};
+  if(success&&snapshot==&overlay_&&overlayTime_==t&&snapshot->radialVisible==1&&draw.eyes==3&&snapshot->radialIndex>=0&&snapshot->radialIndex<8){draw.frame=t;draw.tick=snapshot->tick;draw.sector=snapshot->radialIndex;menuReceipt_=draw;}
  }
  void releaseSession(){suspend();handsChannel_.close();handsEnabled_=false;overlayEnabled_=false;laserEnabled_=false;hapticsEnabled_=false;labEnabled_=false;wristEnabled_=false;needsHead_=false;handsPublished_=false;bridge_.reset();if(initialized_)core_.releaseSession();attached_=false;}
  void shutdown(){if(initialized_)core_.shutdown();initialized_=false;attached_=false;}
