@@ -9,6 +9,7 @@
 #include <openxr/openxr.h>
 #include "eye_projection.hpp"
 #include "radial_wire.hpp"
+#include "wrist_panel.hpp"
 namespace edup::vrinput::hands {
 // Only active during the synchronous stereo compose call on its owning thread.
 inline thread_local const Snapshot* activeOverlay=nullptr;
@@ -34,7 +35,7 @@ inline void drawOverlay(ID3D11Device* device,ID3D11DeviceContext* ctx,ID3D11Rend
  std::array<D3D11_RECT,count*49> rects{};
  for(unsigned h=0;h<12;++h){if(h<2?activeOverlay->valid[h]!=1:h==2?activeOverlay->laserValid!=1:h==3?activeOverlay->objectVisible!=1:activeOverlay->radialVisible!=1)continue;unsigned n=0;
   const auto wheel=h>=4?radialWire(h-4):RadialWire{};
-  for(unsigned i=0;i<(h<2?count:h==2?1u:h==3?12u:wheel.size);++i){Line2 l;if(!eyeLine(h<2?segment(*activeOverlay,h,i):h==2?activeOverlay->laser:h==3?activeOverlay->objectLines[i]:wheel.lines[i],xrPose(head),xrPose(eye.pose),f,l))continue;
+  for(unsigned i=0;i<(h<2?count:h==2?1u:h==3?12u:wheel.size);++i){Line2 l;if(!eyeLine(h<2?segment(*activeOverlay,h,i):h==2?activeOverlay->laser:h==3?activeOverlay->objectLines[i]:activeOverlay->wristVisible?wristSegment(wheel.lines[i],activeOverlay->wristCenter):wheel.lines[i],xrPose(head),xrPose(eye.pose),f,l))continue;
    float dx=(l.b.x-l.a.x)*width,dy=(l.b.y-l.a.y)*height;
    unsigned steps=std::clamp(unsigned(std::ceil((std::max)(std::abs(dx),std::abs(dy))/3.f)),1u,48u);
    for(unsigned k=0;k<=steps;++k){float t=float(k)/steps;LONG x=LONG(std::lround(l.a.x*(width-1)+t*(l.b.x-l.a.x)*(width-1)));LONG y=LONG(std::lround(l.a.y*(height-1)+t*(l.b.y-l.a.y)*(height-1)));
