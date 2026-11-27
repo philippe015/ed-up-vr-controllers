@@ -53,6 +53,7 @@ Settings loadAimSettings(const wchar_t* path){
  s.extraLookDeadzonePercent=readNumber(path,L"Movement",L"ExtraLookDeadzonePercent",L"0",40);
  s.equipmentGestures=readNumber(path,L"Movement",L"EquipmentGestures",L"0",1)!=0;
  s.equipmentScalePercent=readNumber(path,L"Movement",L"EquipmentScalePercent",L"100",130);if(s.equipmentScalePercent<70)throw std::invalid_argument("invalid equipment scale");
+ s.radialMenu=readNumber(path,L"Movement",L"RadialMenu",L"0",1)!=0;
  s.weaponSelect=readNumber(path,L"Movement",L"WeaponSelect",L"0",1)!=0;
  s.strictTools=readNumber(path,L"Movement",L"StrictTools",L"0",1)!=0;
  s.toolLayer=readNumber(path,L"Movement",L"ToolLayer",L"1",1)!=0;
@@ -90,7 +91,7 @@ struct WindowsBridge::Impl {
   if(out.dx||out.dy){if(!focus()){if(!release())fault=true;return {};}
    INPUT m{};m.type=INPUT_MOUSE;m.mi.dx=out.dx;m.mi.dy=out.dy;m.mi.dwFlags=MOUSEEVENTF_MOVE;if(SendInput(1,&m,sizeof(m))!=1){fault=true;release();return {};}}
   if(!focus()){if(!release())fault=true;return {};}
-  InteractionReport report{sent&~before,out.pointing,out.mode};
+  InteractionReport report{sent&~before,out.pointing,out.mode,out.radialVisible,out.radialIndex};
   for(unsigned i=0;i<Count;++i)if(b[i].kind==Binding::Disabled)report.pressed.reset(i);
   return report;
  }
