@@ -3,7 +3,7 @@
 namespace edup::vrinput::hands {
 // Head-local radial overlay. One wedge (4 edges) plus a seven-segment digit.
 struct RadialWire {std::array<Segment,11> lines{};unsigned size=0;};
-inline RadialWire radialWire(unsigned i){
+inline RadialWire buildRadialWire(unsigned i){
  RadialWire w;if(i>=8)return w;
  constexpr float step=.7853981634f;
  float a=i*step;
@@ -18,5 +18,9 @@ inline RadialWire radialWire(unsigned i){
  constexpr unsigned masks[]={0x06,0x5b,0x4f,0x66,0x6d,0x7d,0x07,0x7f};
  for(unsigned k=0;k<7;++k)if(masks[i]&(1u<<k))add(pts[ends[k][0]],pts[ends[k][1]]);
  return w;
+}
+inline const RadialWire& radialWire(unsigned i){
+ static const auto cached=[](){std::array<RadialWire,8> w{};for(unsigned j=0;j<8;++j)w[j]=buildRadialWire(j);return w;}();
+ static const RadialWire empty{};return i<cached.size()?cached[i]:empty;
 }
 }
