@@ -96,6 +96,13 @@ function RestorePatch {
  Set-Content -LiteralPath $marker -Value 'Original runtime restored' -Encoding ascii
  Write-Host "Restauration terminee. Sauvegarde conservee : $state"
 }
+if(!$GamePath -and (Test-Path -LiteralPath (Join-Path $PSScriptRoot 'find-game.ps1') -PathType Leaf)){
+ . (Join-Path $PSScriptRoot 'find-game.ps1')
+ $recoveryRoot=''
+ if((Split-Path -Leaf $PSScriptRoot) -eq $stateName){$recoveryRoot=Split-Path -Parent $PSScriptRoot}
+ $GamePath=Select-EdGameFolder -Mode $Mode -RecoveryRoot $recoveryRoot
+ if(!$GamePath){exit 2}
+}
 if(!$GamePath){Add-Type -AssemblyName System.Windows.Forms;$dialog=New-Object System.Windows.Forms.FolderBrowserDialog;$dialog.Description='Selectionner le dossier contenant EliteDangerous64.exe';if($dialog.ShowDialog() -ne 'OK'){exit 2};$GamePath=$dialog.SelectedPath}
 $root=(Get-Item -LiteralPath $GamePath).FullName
 if(!(Test-Path -LiteralPath (SafePath $root 'EliteDangerous64.exe') -PathType Leaf)){throw 'Dossier EliteDangerous64.exe incorrect'}
@@ -115,6 +122,7 @@ try{
  if($previous -and !(Test-Path -LiteralPath (SafePath $state 'restored.txt') -PathType Leaf)){throw "Sauvegarde active : $state. Restaurer avant reinstallation."}
  $m=ReadManifest (Join-Path $PSScriptRoot 'manifest.json')
  $payload=Join-Path $PSScriptRoot 'payload'
+ Write-Host '[1/3] Verification des fichiers et du dossier du jeu...'
  foreach($f in $m.files){
   $src=SafePath $payload $f.path
   if((Hash $src) -ne $f.sha256){throw "SHA256 invalide : $src"}
@@ -135,6 +143,7 @@ try{
   [IO.Directory]::Move($state,$archive)
   Write-Host "Sauvegarde precedente archivee : $archive"
  }
+ Write-Host '[2/3] Sauvegarde du fichier OpenVR original...'
  New-Item -ItemType Directory -Path $state | Out-Null
  [IO.File]::Copy($runtime,(Join-Path $state 'original.dll'),$false)
  if((Hash (Join-Path $state 'original.dll')) -ne $old){throw 'Sauvegarde corrompue'}
@@ -143,14 +152,18 @@ try{
  # Recovery remains available even after the Windows wrapper is removed.
  [IO.File]::Copy($PSCommandPath,(Join-Path $state 'install-patch.ps1'),$false)
  [IO.File]::Copy((Join-Path $PSScriptRoot 'Restaurer.cmd'),(Join-Path $state 'Restaurer.cmd'),$false)
+ [IO.File]::Copy((Join-Path $PSScriptRoot 'find-game.ps1'),(Join-Path $state 'find-game.ps1'),$false)
  try{
   PutFile (Join-Path $state 'original.dll') (SafePath $root $alias) $false
+  Write-Host '[3/3] Installation et verification...'
+  $done=0
   foreach($f in $m.files){
    GuardGame
    $dst=SafePath $root $f.path
    if($f.path -eq $orig -and (Hash $dst) -ne $old){throw 'Runtime original change pendant installation'}
    PutFile (SafePath $payload $f.path) $dst ($f.path -eq $orig)
    if((Hash $dst) -ne $f.sha256){throw 'Verification apres copie echouee'}
+   $done++;Write-Host ('  [{0}/{1}] {2}' -f $done,$m.files.Count,$f.path)
   }
   Write-Host "Installation experimentale terminee. Sauvegarde : $state"
  }catch{
