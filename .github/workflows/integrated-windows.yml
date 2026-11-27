@@ -59,6 +59,21 @@ jobs:
           if ($LASTEXITCODE -ne 0 -or (Compare-Object $changed $expected)) { throw 'Unexpected tracked modifications' }
           git -C upstream diff | Out-File -Encoding utf8 integration.diff
           @("contribution=$(git -C contribution rev-parse HEAD)","upstream=$actual","kind=experimental-proof") | Out-File -Encoding utf8 build-provenance.txt
+      - name: Create local clean experimental packaging revision
+        if: matrix.variant == 'integrated'
+        run: |
+          $ErrorActionPreference = 'Stop'
+          git -C upstream add -- build.bat src/openxr/d3d11_stereo.cpp src/openxr/native_runtime_host.h vr-controllers
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot stage integration' }
+          git -C upstream -c user.name="EDUP preview CI" -c user.email="ci@example.invalid" commit -m "Local experimental integration proof"
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot commit integration locally' }
+          $tag = 'v0.9.18-preview'
+          git -C upstream tag $tag
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot create local preview tag' }
+          $stamp = git -C upstream describe --tags --always --dirty
+          if ($LASTEXITCODE -ne 0 -or $stamp -cne $tag -or (git -C upstream status --porcelain --untracked-files=all)) { throw 'Local packaging tree not clean' }
+          Add-Content build-provenance.txt "integration=$(git -C upstream rev-parse HEAD)"
+          Add-Content build-provenance.txt "package=$tag"
       - name: Record baseline provenance
         if: matrix.variant == 'baseline'
         run: |
@@ -145,8 +160,55 @@ jobs:
         if: success() && matrix.variant == 'integrated'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
-          name: ED-UP-VR-v0.9.17-Windows-x64-test-build
+          name: ED-UP-VR-v0.9.18-preview-Windows-x64-test-build
           path: vr-test-build/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Package clean native build using upstream receipt and version gates
+        if: success() && matrix.variant == 'integrated'
+        working-directory: upstream
+        run: |
+          cmd /c "package.bat 0.9.18-preview"
+          if ($LASTEXITCODE -ne 0) { throw 'Upstream packaging failed' }
+      - name: Assemble offline VR-only installer and verify fixture recovery
+        if: success() && matrix.variant == 'integrated'
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = (Resolve-Path contribution/vr-controllers/installer).Path
+          $payload = Join-Path $root 'full-payload'
+          python "$root/stage_full.py" upstream/dist/ed-up-0.9.18-preview.zip $payload contribution/vr-controllers build-provenance.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Offline package staging failed' }
+          & "$root/test-full-install.ps1" -Package $payload
+          $iscc = Get-Command ISCC.exe -ErrorAction SilentlyContinue
+          if ($iscc) { $compiler = $iscc.Source } else {
+            $compiler = Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'
+            if (!(Test-Path -LiteralPath $compiler)) { $compiler = Join-Path $env:ProgramFiles 'Inno Setup 6\ISCC.exe' }
+          }
+          if (!(Test-Path -LiteralPath $compiler)) { throw 'Inno Setup compiler missing' }
+          & $compiler "$root/full-setup.iss"
+          if ($LASTEXITCODE -ne 0) { throw 'Full setup compile failed' }
+          $setup = Join-Path $root 'output/ED-UP-VR-Full-Setup-v0.9.18-preview-x64.exe'
+          if (!(Test-Path -LiteralPath $setup -PathType Leaf)) { throw 'Missing full setup' }
+          $target = Join-Path $env:RUNNER_TEMP 'EDUP-VR-Full-Setup-Test'
+          if (Test-Path -LiteralPath $target) { throw 'Fixture target already exists' }
+          $p = Start-Process -FilePath $setup -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/LANG=french',('/DIR="' + $target + '"')) -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "Full setup exit: $($p.ExitCode)" }
+          & "$root/test-full-install.ps1" -Package $target
+          $uninstaller = @(Get-ChildItem -LiteralPath $target -Filter 'unins*.exe')
+          if ($uninstaller.Count -ne 1) { throw 'Expected one wrapper uninstaller' }
+          $p = Start-Process -FilePath $uninstaller[0].FullName -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART' -Wait -PassThru
+          if ($p.ExitCode -ne 0 -or (Test-Path -LiteralPath (Join-Path $target 'install-patch.ps1'))) { throw 'Wrapper uninstall failed' }
+          New-Item -ItemType Directory -Path full-installer | Out-Null
+          Copy-Item -LiteralPath $setup full-installer/
+          Copy-Item "$payload/FULL-INSTALL-GUIDE.md" full-installer/
+          Copy-Item "$payload/build-provenance.txt" full-installer/
+          Get-ChildItem -LiteralPath full-installer -File | Sort-Object Name | ForEach-Object { '{0}  {1}' -f (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant(), $_.Name } | Set-Content -Encoding ascii full-installer/SHA256SUMS
+      - name: Upload experimental full Windows installer proof
+        if: success() && matrix.variant == 'integrated'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: ED-UP-VR-Full-Setup-v0.9.18-preview-x64
+          path: full-installer/
           if-no-files-found: error
           retention-days: 14
       - name: Upload proof diagnostics (not a release or installer)
