@@ -15,7 +15,7 @@ namespace edup::vrinput::foot {
 enum Action {Forward, Back, Left, Right, Jump, Interact, Crouch, Sprint, CycleTool, Reload, Primary, Secondary, EnergyLink, ProfileAnalyser, SuitTool, Holster, Flashlight, ToolMode, SelectPrimaryWeapon, SelectSecondaryWeapon, Count};
 using Keys=std::bitset<Count>;
 struct Hand {bool ready=false, primary=false, secondary=false, stickClick=false; float x=0,y=0,trigger=0,squeeze=0; Orientation aim{}; edup::experimental::Vec3 gripPosition{}; bool gripTracked=false;};
-struct Sample {std::array<Hand,2> hand{}; bool enabled=false, focused=false; hands::Pose head{}; bool headTracked=false;};
+struct Sample {std::array<Hand,2> hand{}; bool enabled=false, focused=false; hands::Pose head{}; bool headTracked=false;int renderedRadialSector=-1;};
 enum class ControlMode : uint32_t { Neutral=0, Normal=1, Tools=2, Motion=3, TwoHand=4, Snap=5 };
 struct Output {Keys held{}; int dx=0,dy=0; bool pointing=false; ControlMode mode=ControlMode::Neutral; bool radialVisible=false;int radialIndex=-1;};
 struct Settings {float moveOn=.55f,moveOff=.35f,triggerOn=.65f,triggerOff=.40f; float lookPixelsPerSecond=900.f; bool invertY=false; bool toolLayer=true; bool motionAim=true; float aimPixelsPerDegree=10.f; bool twoHandAim=false; bool leftHanded=false; unsigned snapMode=0; unsigned snapPixelsPerDegree=10; unsigned extraLookDeadzonePercent=0; bool strictTools=false; bool weaponSelect=false; bool equipmentGestures=false; bool radialMenu=false; bool wristMenu=false; unsigned equipmentScalePercent=100;};
@@ -70,14 +70,14 @@ public:
    const std::array<Action,6> actions={EnergyLink,ProfileAnalyser,SuitTool,Holster,Flashlight,ToolMode};
    unsigned n=0,selected=0;for(unsigned i=0;i<buttons.size();++i)if(buttons[i]){++n;selected=i;}
    // Optional radial replaces stick weapon selection; button/gesture paths remain available.
-   if((cfg_.radialMenu||cfg_.wristMenu)&&(radial_.active()||(!gestureLocked_&&r.squeeze<.05f&&(std::abs(r.x)>=.20f||std::abs(r.y)>=.20f)))){
+   if((cfg_.radialMenu||cfg_.wristMenu)&&(radial_.active()||(!gestureLocked_&&(std::abs(r.x)>=.20f||std::abs(r.y)>=.20f)))){
     Output o;o.mode=ControlMode::Tools;
     hands::Vec anchor{};
     const bool wristOk=!cfg_.wristMenu||(s.headTracked&&l.gripTracked&&hands::wristAnchor({float(l.gripPosition.x),float(l.gripPosition.y),float(l.gripPosition.z)},s.head,anchor));
     const bool clean=wristOk&&s.headTracked&&l.trigger<.05f&&r.trigger<.05f&&r.squeeze<.05f&&
       std::abs(l.x)<.10f&&std::abs(l.y)<.10f&&!l.primary&&!l.secondary&&!l.stickClick&&!r.secondary&&!r.stickClick&&
       !gestureLocked_&&!chordBlocked_&&!weaponBusy_&&(held_.none()||(radialAction_!=Count&&held_[radialAction_]));
-    auto menu=radial_.update(r.x,r.y,r.primary,clean,dt);
+    auto menu=radial_.update(r.x,r.y,r.primary,clean,dt,s.renderedRadialSector);
     if(!clean||!radial_.active()){radialAction_=Count;radialPulse_=0;}
     constexpr Action choices[]={SelectPrimaryWeapon,EnergyLink,ProfileAnalyser,SuitTool,SelectSecondaryWeapon,Holster,Flashlight,ToolMode};
     if(menu.confirmed>=0){
@@ -117,7 +117,7 @@ public:
    }
    // Opt-in equipment selection: support grip + dominant stick up/down.
    // One short key press per deliberate deflection; never fire or move in this layer.
-   if(cfg_.weaponSelect && (weaponBusy_ || std::abs(r.y)>=.20f || std::abs(r.x)>=.20f)){
+   if(cfg_.weaponSelect && !cfg_.radialMenu && !cfg_.wristMenu && (weaponBusy_ || std::abs(r.y)>=.20f || std::abs(r.x)>=.20f)){
     weaponBusy_=true;Output o;o.mode=ControlMode::Tools;
     const bool conflict=n!=0||l.trigger>=.05f||r.trigger>=.05f||r.squeeze>=.05f||
       std::abs(l.x)>=.10f||std::abs(l.y)>=.10f||std::abs(r.x)>=.20f||chordBlocked_||
