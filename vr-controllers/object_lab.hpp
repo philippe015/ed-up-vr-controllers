@@ -11,13 +11,16 @@ struct GrabHand{Pose pose{};float grip=0;bool tracked=false;};
 struct LabFrame{Pose object{};bool visible=false;int owner=-1;};
 class ObjectLab{
  Pose object_{},offset_{};
- bool initialized_=false,armed_=false;
+ bool initialized_=false,armed_=false,seen_=false;
+ uint64_t lastTick_=0;
  int owner_=-1;
  std::array<bool,2> down_{};
  static bool valid(Pose& p){return finite(p.p)&&normalize(p.q);}
 public:
  void reset(){*this=ObjectLab{};}
- LabFrame update(Pose head,bool headTracked,std::array<GrabHand,2> hand){
+ LabFrame update(Pose head,bool headTracked,std::array<GrabHand,2> hand,uint64_t tick){
+  if(seen_&&(tick<lastTick_||tick-lastTick_>=100)){reset();}
+  seen_=true;lastTick_=tick;
   if(!headTracked||!valid(head)){reset();return {};}
   for(auto& h:hand)if(!h.tracked||!valid(h.pose)||!std::isfinite(h.grip)||h.grip<0||h.grip>1||lengthSquared(h.pose.p-head.p)>4){reset();return {};}
   if(!initialized_){object_={head.p+rotate(head.q,{0,-.25f,-.45f}),head.q};initialized_=true;}
@@ -29,7 +32,7 @@ public:
    auto& h=hand[owner_];
    if(!down_[owner_]){owner_=-1;armed_=false;down_={};return {object_,true,-1};}
    object_={h.pose.p+rotate(h.pose.q,offset_.p),compose(h.pose.q,offset_.q)};
-   if(!valid(object_)){reset();return {};}
+   if(!valid(object_)||lengthSquared(object_.p-head.p)>4){reset();return {};}
   }else if(edge[0]!=edge[1]){
    unsigned i=edge[1]?1:0;auto& h=hand[i];
    // Near contact only; preserve rigid 6DoF transform without snapping.
