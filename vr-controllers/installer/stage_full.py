@@ -53,6 +53,6 @@ def main():
     shutil.copyfile(a.provenance,a.output/"build-provenance.txt")
     files=[{"path":p.relative_to(payload).as_posix(),"sha256":sha(p)} for p in sorted(payload.rglob("*")) if p.is_file()]
     (a.output/"manifest.json").write_text(json.dumps({"schema":1,"files":files},indent=2),encoding="ascii")
-    for name in ["install-patch.ps1","Installer.cmd","Restaurer.cmd","FULL-INSTALL-GUIDE.md"]:
+    for name in ["install-patch.ps1","find-game.ps1","Installer.cmd","Restaurer.cmd","Verifier.cmd","FULL-INSTALL-GUIDE.md"]:
         shutil.copyfile(a.module/"installer"/name,a.output/name)
 if __name__=="__main__": main()
