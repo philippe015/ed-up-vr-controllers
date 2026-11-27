@@ -89,9 +89,12 @@ def inspect_runtime(manifest, source):
  report['provider']=runtime_family(manifest)
  try:
   p=Path(manifest)
-  with p.open('r',encoding='utf-8-sig') as f: data=json.loads(f.read(1024*1024+1))
+  with p.open('rb') as f: raw=f.read(1024*1024+1)
+  if len(raw)>1024*1024: raise ValueError('Manifest trop volumineux (limite 1 Mio)')
+  data=json.loads(raw.decode('utf-8-sig'))
+  if not isinstance(data,dict) or not isinstance(data.get('runtime'),dict): raise ValueError('Structure du manifest invalide')
   lib=data['runtime']['library_path']
-  if not isinstance(lib,str) or not lib.strip() or not isinstance(data.get('file_format_version'),str): raise ValueError('Manifest OpenXR invalide')
+  if not isinstance(lib,str) or not lib.strip() or not isinstance(data.get('file_format_version'),str) or not data['file_format_version'].strip(): raise ValueError('Manifest OpenXR invalide')
   report['manifest_ok']=True
   report['provider']=runtime_family(manifest,lib)
   target=Path(lib)
@@ -115,7 +118,7 @@ def active_runtime():
 def main():
  import tkinter as tk
  from tkinter import ttk,filedialog,messagebox
- root=tk.Tk();root.title('ED-UP VR Control Center v0.9.14 — Philou Cyberpunk');root.geometry('840x760');root.minsize(720,640)
+ root=tk.Tk();root.title('ED-UP VR Control Center v0.9.15 — Philou Cyberpunk');root.geometry('840x760');root.minsize(720,640)
  style=ttk.Style(root);style.theme_use('clam');style.configure('Header.TLabel',font=('Segoe UI',18,'bold'));style.configure('TButton',padding=6)
  body=ttk.Frame(root,padding=16);body.pack(fill='both',expand=True)
  ttk.Label(body,text='ED-UP VR CONTROL CENTER',style='Header.TLabel').pack(anchor='w');ttk.Label(body,text='Odyssey à pied • Quest / Valve Index • OpenXR • Configuration locale').pack(anchor='w',pady=(0,12))
