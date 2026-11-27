@@ -60,3 +60,61 @@ function Find-EdGameFolders {
   }
  }
 }
+
+# Explicit selection even if only one candidate is found. Manual selection always available.
+function Select-EdGameFolder {
+ param([string]$Mode,[string]$RecoveryRoot)
+ Add-Type -AssemblyName System.Windows.Forms
+ Add-Type -AssemblyName System.Drawing
+ $form=New-Object Windows.Forms.Form
+ $form.Text='ED-UP VR - Choix du jeu'
+ $form.StartPosition='CenterScreen';$form.ClientSize=New-Object Drawing.Size(680,320)
+ $form.MinimumSize=New-Object Drawing.Size(696,359)
+ $form.AutoScaleMode='Dpi'
+ $label=New-Object Windows.Forms.Label
+ $label.Text='Choisissez le dossier du jeu contenant EliteDangerous64.exe.'
+ $label.SetBounds(12,12,650,26);$label.Anchor='Top,Left,Right';$form.Controls.Add($label)
+ $list=New-Object Windows.Forms.ListBox
+ $list.SetBounds(12,42,656,166);$list.Anchor='Top,Bottom,Left,Right';$list.HorizontalScrollbar=$true
+ $form.Controls.Add($list)
+ foreach($p in @(Find-EdGameFolders -ExtraRoots @($RecoveryRoot))){
+  [void]$list.Items.Add($p)
+ }
+ if($list.Items.Count -eq 1){$list.SelectedIndex=0}
+ $hint=New-Object Windows.Forms.Label
+ $hint.Text='Steam / Epic : detection indicative. Sinon, utiliser Parcourir.'
+ if($list.Items.Count -eq 0){$hint.Text='Aucun dossier detecte. Utilisez Parcourir pour le selectionner.'}
+ $hint.SetBounds(12,216,650,28);$hint.Anchor='Bottom,Left,Right';$form.Controls.Add($hint)
+ $browse=New-Object Windows.Forms.Button
+ $browse.Text='Parcourir...';$browse.SetBounds(12,264,136,36);$browse.Anchor='Bottom,Left'
+ $browse.Add_Click({
+  $dlg=New-Object Windows.Forms.FolderBrowserDialog
+  try{
+   $dlg.Description='Dossier contenant EliteDangerous64.exe'
+   if($list.SelectedItem){$dlg.SelectedPath=[string]$list.SelectedItem}
+   if($dlg.ShowDialog($form) -eq 'OK'){
+    $index=$list.Items.IndexOf($dlg.SelectedPath)
+    if($index -lt 0){$index=$list.Items.Add($dlg.SelectedPath)}
+    $list.SelectedIndex=$index
+   }
+  }finally{$dlg.Dispose()}
+ })
+ $form.Controls.Add($browse)
+ $ok=New-Object Windows.Forms.Button
+ $ok.Text='Continuer';$ok.SetBounds(414,264,120,36);$ok.Anchor='Bottom,Right';$ok.Enabled=$list.SelectedIndex -ge 0
+ $ok.DialogResult='OK';$form.AcceptButton=$ok;$form.Controls.Add($ok)
+ $list.Add_SelectedIndexChanged({$ok.Enabled=$list.SelectedIndex -ge 0})
+ $cancel=New-Object Windows.Forms.Button
+ $cancel.Text='Annuler';$cancel.SetBounds(548,264,120,36);$cancel.Anchor='Bottom,Right'
+ $cancel.DialogResult='Cancel';$form.CancelButton=$cancel;$form.Controls.Add($cancel)
+ try{
+  if($form.ShowDialog() -ne 'OK' -or !$list.SelectedItem){return}
+  $selected=[string]$list.SelectedItem
+  if($Mode -ne 'Check'){
+   $action=if($Mode -eq 'Restore'){'Restaurer le jeu'}else{'Installer le patch VR experimental'}
+   $answer=[Windows.Forms.MessageBox]::Show("$action ?\n\n$selected\n\nFermez Elite Dangerous et son lanceur.".Replace('\n',[Environment]::NewLine),'ED-UP VR','OKCancel','Warning')
+   if($answer -ne 'OK'){return}
+  }
+  return $selected
+ }finally{$form.Dispose()}
+}
