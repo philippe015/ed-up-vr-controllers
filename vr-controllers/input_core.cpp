@@ -66,10 +66,11 @@ XrResult InputCore::poll(bool focused,XrSpace base,XrTime time){
   XrInteractionProfileState ps{XR_TYPE_INTERACTION_PROFILE_STATE};if(GetCurrentInteractionProfile_(session_,paths_[i],&ps)==XR_SUCCESS)h.profile=ps.interactionProfile;
   if(snapshot_[i].profile!=h.profile)gates_[i].armed=false;
   bool ok=true;
-  auto fl=[&](A a){gi.action=actions_[a];XrActionStateFloat s{XR_TYPE_ACTION_STATE_FLOAT};if(GetActionStateFloat_(session_,&gi,&s)!=XR_SUCCESS){ok=false;return 0.f;}if(s.isActive&&!analogValid(s.currentState,0.f,1.f)){ok=false;return 0.f;}return s.isActive?unit(s.currentState):0.f;};
-  auto bo=[&](A a){gi.action=actions_[a];XrActionStateBoolean s{XR_TYPE_ACTION_STATE_BOOLEAN};if(GetActionStateBoolean_(session_,&gi,&s)!=XR_SUCCESS){ok=false;return false;}return s.isActive&&s.currentState==XR_TRUE;};
+  auto fl=[&](A a){gi.action=actions_[a];XrActionStateFloat s{XR_TYPE_ACTION_STATE_FLOAT};if(GetActionStateFloat_(session_,&gi,&s)!=XR_SUCCESS){ok=false;return 0.f;}if(s.isActive)h.activeMask|=1u<<a;if(s.isActive&&!analogValid(s.currentState,0.f,1.f)){ok=false;return 0.f;}return s.isActive?unit(s.currentState):0.f;};
+  auto bo=[&](A a){gi.action=actions_[a];XrActionStateBoolean s{XR_TYPE_ACTION_STATE_BOOLEAN};if(GetActionStateBoolean_(session_,&gi,&s)!=XR_SUCCESS){ok=false;return false;}if(s.isActive)h.activeMask|=1u<<a;return s.isActive&&s.currentState==XR_TRUE;};
   h.trigger=fl(Trigger);h.squeeze=fl(Squeeze);h.primary=bo(Primary);h.secondary=bo(Secondary);h.stickClick=bo(StickClick);
-  gi.action=actions_[Stick];XrActionStateVector2f s{XR_TYPE_ACTION_STATE_VECTOR2F};if(GetActionStateVector2f_(session_,&gi,&s)!=XR_SUCCESS)ok=false;else if(s.isActive){if(!analogValid(s.currentState.x,-1.f,1.f)||!analogValid(s.currentState.y,-1.f,1.f))ok=false;else {h.x=axis(s.currentState.x);h.y=axis(s.currentState.y);}}
+  gi.action=actions_[Stick];XrActionStateVector2f s{XR_TYPE_ACTION_STATE_VECTOR2F};if(GetActionStateVector2f_(session_,&gi,&s)!=XR_SUCCESS)ok=false;else if(s.isActive){h.activeMask|=1u<<Stick;if(!analogValid(s.currentState.x,-1.f,1.f)||!analogValid(s.currentState.y,-1.f,1.f))ok=false;else {h.x=axis(s.currentState.x);h.y=axis(s.currentState.y);}}
+  if(snapshot_[i].activeMask!=h.activeMask)gates_[i].armed=false;
   bool neutral=h.trigger<.05f&&h.squeeze<.05f&&!h.primary&&!h.secondary&&!h.stickClick&&h.x==0&&h.y==0;
   h.ready=gates_[i].accept(true,h.tracked&&ok&&h.profile!=XR_NULL_PATH,neutral);
   if(!h.ready){h.trigger=h.squeeze=h.x=h.y=0;h.primary=h.secondary=h.stickClick=false;}
