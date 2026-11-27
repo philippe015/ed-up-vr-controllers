@@ -18,7 +18,7 @@ int main(){
   l.gripPosition={left?.15:-.15,-.15,-.5};auto tick=[&]{return m.update(s,.01f);};
   tick();l.squeeze=.8f;tick();tick();r.y=.9f;
   for(int i=0;i<20;++i){auto o=tick();assert(o.radialVisible&&o.held.none());}
-  r.primary=true;assert(tick().held[SelectPrimaryWeapon]);r.primary=false;r.y=0;tick();
+  s.renderedRadialSector=0;r.primary=true;assert(tick().held[SelectPrimaryWeapon]);s.renderedRadialSector=-1;r.primary=false;r.y=0;tick();
   r.y=.9f;for(int i=0;i<20;++i)tick();l.gripTracked=false;r.primary=true;assert(tick().held.none());l.gripTracked=true;assert(tick().held.none());
   r.primary=false;r.y=0;tick();l.gripPosition={0,0,.5};r.y=.9f;for(int i=0;i<20;++i){auto o=tick();assert(!o.radialVisible&&o.held.none());}
   r.primary=true;assert(tick().held.none());
