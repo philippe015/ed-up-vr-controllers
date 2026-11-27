@@ -1,3 +1,9 @@
+# v0.9.17 — Wrist panel (experimental)
+
+Optional Movement/WristMenu=1 (default 0), ToolLayer=1. WristMenu implies the eight-sector radial menu and places it above the tracked support controller, facing the head. Hold support grip, bring that controller in front of the headset at a comfortable distance, deflect dominant stick for at least 120 ms, confirm with dominant A. Return stick and button to neutral. Moving the support controller outside the permitted region or losing tracking cancels selection until neutral. Release grip to cancel. The panel is an approximation attached to a controller, not anatomical wrist tracking or native inventory; no direct finger touch. Requires compatible stereo overlay; do not use if not visible. Protocol v6 (older viewers incompatible). Windows and physical headset tests pending.
+
+---
+
 # v0.9.16 — Experimental radial menu
 
 Set Movement/RadialMenu=1 (default 0) and ToolLayer=1, configure keyboard bindings, restart. Hold support grip, wait for neutral, deflect dominant stick to open the numbered stereo wireframe wheel. Hold the desired direction for at least 120 ms, then press dominant A to confirm once. Return stick and button to neutral before another selection. Release support grip to cancel. Clockwise from top: 1 primary weapon, 2 energy link, 3 profile analyser, 4 suit tool, 5 secondary weapon, 6 holster, 7 flashlight, 8 tool mode. No movement or firing in menu mode. Tracking loss or conflicting input blocks confirmation. Replaces stick-only weapon selection when enabled; normal button and grip gestures remain. Requires integrated patch and compatible Direct3D ClearView overlay; display not yet tested on headset. Do not use if the wheel is not visible. Numbered sectors, not native game inventory, no game-state confirmation. Snapshot protocol v5; old viewers incompatible. Wrist UI still pending.
