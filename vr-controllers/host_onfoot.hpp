@@ -16,10 +16,10 @@ namespace edup::vrinput::foot {
 // Optional integration with ED-UP's existing owner thread. No new XR session.
 class HostOnFoot {
  hands::Channel handsChannel_;bool handsEnabled_=false,overlayEnabled_=false,laserEnabled_=false,hapticsEnabled_=false;
- bool leftHanded_=false,labEnabled_=false,wristEnabled_=false;hands::ObjectLab lab_;hands::LabFrame labFrame_{};
+ bool leftHanded_=false,labEnabled_=false,wristEnabled_=false,needsHead_=false,handsPublished_=false;hands::ObjectLab lab_;hands::LabFrame labFrame_{};
  HapticLimiter hapticLimiter_;float hapticStrength_=.25f;
  hands::Snapshot overlay_{};XrTime overlayTime_=0;
- void clearHands(){lab_.reset();labFrame_={};overlay_={};overlayTime_=0;if(handsEnabled_)handsChannel_.write(hands::Snapshot{});}
+ void clearHands(){lab_.reset();labFrame_={};overlay_={};overlayTime_=0;if(handsEnabled_&&handsPublished_&&handsChannel_.write(hands::Snapshot{}))handsPublished_=false;}
  static hands::Pose convert(const XrPosef& p){return {{p.position.x,p.position.y,p.position.z},{p.orientation.x,p.orientation.y,p.orientation.z,p.orientation.w}};}
  void publishHands(XrTime t,const InteractionReport& report,const Sample& sample){
   if(!handsEnabled_&&!overlayEnabled_)return;hands::Snapshot out;const bool headValid=sample.headTracked;const auto& head=sample.head;
@@ -30,7 +30,7 @@ class HostOnFoot {
   if(headValid&&labEnabled_&&labFrame_.visible){out.objectVisible=1;out.objectOwner=labFrame_.owner;out.objectLines=hands::objectWire(labFrame_.object,head);}
   out.tick=GetTickCount64();
   if(overlayEnabled_){overlay_=out;overlayTime_=t;}
-  if(handsEnabled_)handsChannel_.write(out);
+  if(handsEnabled_&&handsChannel_.write(out))handsPublished_=true;
  }
  InputCore core_;std::unique_ptr<WindowsBridge> bridge_;bool initialized_=false,attached_=false,mode_=false,f10WasDown_=true;
  static bool foregroundGame(){DWORD pid=0;auto w=GetForegroundWindow();if(!w)return false;GetWindowThreadProcessId(w,&pid);return pid==GetCurrentProcessId();}
@@ -53,6 +53,7 @@ public:
    bridge_=std::make_unique<WindowsBridge>(GetCurrentProcessId(),loadToolBindings(path.c_str()),settings);
    if(visual.hands)handsEnabled_=handsChannel_.open(GetCurrentProcessId(),true);
    labEnabled_=visual.objectLab;overlayEnabled_=visual.overlay||labEnabled_||settings.radialMenu||wristEnabled_;laserEnabled_=visual.laser;hapticsEnabled_=visual.haptics;hapticStrength_=visual.hapticStrength;
+   needsHead_=handsEnabled_||overlayEnabled_||settings.equipmentGestures;
   }catch(...){bridge_.reset();OutputDebugStringW(L"ED-UP VR OnFoot: invalid configuration or bridge unavailable; disabled.\n");}
  }
  void suspend(){clearHands();mode_=false;f10WasDown_=true;core_.neutralize();if(bridge_)bridge_->stop();}
@@ -65,7 +66,7 @@ public:
   if(!mode_){clearHands();return;}
   if(core_.poll(true,base,t)!=XR_SUCCESS){suspend();return;}
   auto sample=fromCore(core_,true,true);XrPosef head{};
-  if(core_.locateHead(view,base,t,head)){sample.head=convert(head);sample.headTracked=true;}
+  if(needsHead_&&core_.locateHead(view,base,t,head)){sample.head=convert(head);sample.headTracked=true;}
   InteractionReport report{};
   if(labEnabled_){
    // Exclusive sandbox: no game keyboard/mouse events during object interaction.
@@ -74,7 +75,8 @@ public:
    for(unsigned i=0;i<2;++i){const auto& h=core_.hands()[i];hand[i]={convert(h.grip),h.squeeze,h.ready&&h.tracked};}
    labFrame_=lab_.update(sample.head,sample.headTracked,hand,GetTickCount64());
   }else report=bridge_->submit(sample);
-  if(hapticsEnabled_&&hapticStrength_>0&&foregroundGame()){const auto cue=cues(report.pressed);const auto now=GetTickCount64();
+  const auto cue=cues(report.pressed);
+  if(hapticsEnabled_&&hapticStrength_>0&&(cue.left||cue.right)&&foregroundGame()){const auto now=GetTickCount64();
    const unsigned support=leftHanded_?1:0, dominant=leftHanded_?0:1;
    if(cue.left&&hapticLimiter_.permit(support,now))core_.pulse(support,hapticStrength_);
    if(cue.right&&hapticLimiter_.permit(dominant,now))core_.pulse(dominant,hapticStrength_);
@@ -84,7 +86,7 @@ public:
  const hands::Snapshot* overlay(XrTime t,bool eligible,bool focused) const {
   return overlayEnabled_&&mode_&&eligible&&focused&&foregroundGame()&&overlayTime_==t&&hands::fresh(overlay_,GetTickCount64())?&overlay_:nullptr;
  }
- void releaseSession(){suspend();handsChannel_.close();handsEnabled_=false;overlayEnabled_=false;laserEnabled_=false;hapticsEnabled_=false;labEnabled_=false;wristEnabled_=false;bridge_.reset();if(initialized_)core_.releaseSession();attached_=false;}
+ void releaseSession(){suspend();handsChannel_.close();handsEnabled_=false;overlayEnabled_=false;laserEnabled_=false;hapticsEnabled_=false;labEnabled_=false;wristEnabled_=false;needsHead_=false;handsPublished_=false;bridge_.reset();if(initialized_)core_.releaseSession();attached_=false;}
  void shutdown(){if(initialized_)core_.shutdown();initialized_=false;attached_=false;}
 };
 }
