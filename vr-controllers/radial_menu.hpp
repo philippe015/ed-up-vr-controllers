@@ -17,7 +17,7 @@ class RadialMenu{
 public:
  bool active()const{return active_;}
  void reset(){*this=RadialMenu{};}
- RadialResult update(float x,float y,bool confirm,bool clean,float dt){
+ RadialResult update(float x,float y,bool confirm,bool clean,float dt,int renderedSector=-1){
   if(!std::isfinite(dt)||dt<0||dt>=.1f){reset();return {};}
   bool centered=std::abs(x)<.10f&&std::abs(y)<.10f;
   if(!active_){
@@ -31,7 +31,7 @@ public:
   else if(next>=0)dwell_+=dt;
   int selected=-1;
   if(confirm&&!wasConfirm_&&!used_&&!blocked_){
-   if(sector_>=0&&dwell_>=.12f){selected=sector_;used_=true;}
+   if(sector_>=0&&dwell_>=.12f&&renderedSector==sector_){selected=sector_;used_=true;}
    else blocked_=true;
   }
   wasConfirm_=confirm;
