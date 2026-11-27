@@ -26,23 +26,36 @@ inline Pose xrPose(const XrPosef& p){return {{p.position.x,p.position.y,p.positi
 inline void drawOverlay(ID3D11Device* device,ID3D11DeviceContext* ctx,ID3D11RenderTargetView* rtv,
  const XrPosef& head,const XrView& eye,unsigned width,unsigned height){
  if(!activeOverlay||!device||!ctx||!rtv||!width||!height||width>16384||height>16384)return;
+ const auto& snapshot=*activeOverlay;
+ if(snapshot.valid[0]!=1&&snapshot.valid[1]!=1&&snapshot.laserValid!=1&&snapshot.objectVisible!=1&&snapshot.radialVisible!=1)return;
+ const EyeProjector projection(xrPose(head),xrPose(eye.pose),{eye.fov.angleLeft,eye.fov.angleRight,eye.fov.angleDown,eye.fov.angleUp});
+ if(!projection.valid())return;
  D3D11_FEATURE_DATA_D3D11_OPTIONS options{};
  if(FAILED(device->CheckFeatureSupport(D3D11_FEATURE_D3D11_OPTIONS,&options,sizeof(options)))||!options.ClearView)return;
  Microsoft::WRL::ComPtr<ID3D11DeviceContext1> context1;if(FAILED(ctx->QueryInterface(IID_PPV_ARGS(&context1))))return;
- const Fov f{eye.fov.angleLeft,eye.fov.angleRight,eye.fov.angleDown,eye.fov.angleUp};
  const float colors[6][4]={{.03f,.65f,1.f,1.f},{1.f,.45f,.04f,1.f},{.12f,1.f,.35f,1.f},{.9f,.9f,.15f,1.f},{.20f,.65f,.70f,1.f},{1.f,.65f,.12f,1.f}};
- // Bound the GPU work: 19 segments * at most 49 small rectangles per hand.
- std::array<D3D11_RECT,count*49> rects{};
- for(unsigned h=0;h<12;++h){if(h<2?activeOverlay->valid[h]!=1:h==2?activeOverlay->laserValid!=1:h==3?activeOverlay->objectVisible!=1:activeOverlay->radialVisible!=1)continue;unsigned n=0;
-  const auto wheel=h>=4?radialWire(h-4):RadialWire{};
-  for(unsigned i=0;i<(h<2?count:h==2?1u:h==3?12u:wheel.size);++i){Line2 l;if(!eyeLine(h<2?segment(*activeOverlay,h,i):h==2?activeOverlay->laser:h==3?activeOverlay->objectLines[i]:activeOverlay->wristVisible?wristSegment(wheel.lines[i],activeOverlay->wristCenter):wheel.lines[i],xrPose(head),xrPose(eye.pose),f,l))continue;
-   float dx=(l.b.x-l.a.x)*width,dy=(l.b.y-l.a.y)*height;
-   unsigned steps=std::clamp(unsigned(std::ceil((std::max)(std::abs(dx),std::abs(dy))/3.f)),1u,48u);
-   for(unsigned k=0;k<=steps;++k){float t=float(k)/steps;LONG x=LONG(std::lround(l.a.x*(width-1)+t*(l.b.x-l.a.x)*(width-1)));LONG y=LONG(std::lround(l.a.y*(height-1)+t*(l.b.y-l.a.y)*(height-1)));
-    rects[n++]={(std::max)(0L,x-1),(std::max)(0L,y-1),(std::min)(LONG(width),x+2),(std::min)(LONG(height),y+2)};
-   }
+ // Fixed buffers; submit at most six color batches per eye. Keep the exact
+ // original sampling density and clipping. No heap allocation or GPU readback.
+ std::array<D3D11_RECT,8*11*49> rects;
+ unsigned n=0;
+ auto append=[&](Segment line){
+  Line2 l;if(!projection.line(line,l))return;
+  float dx=(l.b.x-l.a.x)*width,dy=(l.b.y-l.a.y)*height;
+  unsigned steps=std::clamp(unsigned(std::ceil((std::max)(std::abs(dx),std::abs(dy))/3.f)),1u,48u);
+  if(n+steps+1>rects.size())return;
+  for(unsigned k=0;k<=steps;++k){float t=float(k)/steps;LONG x=LONG(std::lround(l.a.x*(width-1)+t*(l.b.x-l.a.x)*(width-1)));LONG y=LONG(std::lround(l.a.y*(height-1)+t*(l.b.y-l.a.y)*(height-1)));
+   rects[n++]={(std::max)(0L,x-1),(std::max)(0L,y-1),(std::min)(LONG(width),x+2),(std::min)(LONG(height),y+2)};
   }
-  if(n)context1->ClearView(rtv,colors[h<4?h:(int(h-4)==activeOverlay->radialIndex?5:4)],rects.data(),n);
+ };
+ auto flush=[&](unsigned color){if(n)context1->ClearView(rtv,colors[color],rects.data(),n);n=0;};
+ for(unsigned h=0;h<2;++h){if(snapshot.valid[h]!=1)continue;for(unsigned i=0;i<count;++i)append(segment(snapshot,h,i));flush(h);}
+ if(snapshot.laserValid==1){append(snapshot.laser);flush(2);}
+ if(snapshot.objectVisible==1){for(auto line:snapshot.objectLines)append(line);flush(3);}
+ if(snapshot.radialVisible==1){
+  auto sector=[&](unsigned i){const auto& w=radialWire(i);for(unsigned j=0;j<w.size;++j)append(snapshot.wristVisible?wristSegment(w.lines[j],snapshot.wristCenter):w.lines[j]);};
+  for(unsigned i=0;i<8;++i)if(int(i)!=snapshot.radialIndex)sector(i);
+  flush(4);
+  if(snapshot.radialIndex>=0&&snapshot.radialIndex<8){sector(unsigned(snapshot.radialIndex));flush(5);}
  }
 }
 }
