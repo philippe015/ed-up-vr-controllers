@@ -22,6 +22,8 @@ Name: "french"; MessagesFile: "compiler:Languages\French.isl"
 [CustomMessages]
 english.Scope=Experimental VR-only patch. Setup extracts the offline installer. The separate game installation step asks for your game directory. Existing patches are refused. Restore the game BEFORE uninstalling these tools. No real headset validation; no automatic updates.
 french.Scope=Patch VR experimental uniquement. Ce programme extrait les outils hors ligne. Une seconde etape demande le dossier du jeu. Les patchs existants sont refuses. Restaurer le jeu AVANT de desinstaller ces outils. Aucun test sur casque ni mise a jour automatique.
+english.Verify=Check game folder and files (read-only)
+french.Verify=Verifier le dossier et les fichiers (lecture seule)
 english.RunPatch=Choose the Elite Dangerous directory and install the experimental patch
 french.RunPatch=Choisir le dossier Elite Dangerous et installer le patch experimental
 english.Restore=Restore game files (run before uninstalling tools)
@@ -29,11 +31,12 @@ french.Restore=Restaurer le jeu (avant de desinstaller les outils)
 [Files]
 Source: "full-payload\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 [Icons]
+Name: "{group}\{cm:Verify}"; Filename: "{app}\Verifier.cmd"; WorkingDir: "{app}"
 Name: "{group}\Installer le patch"; Filename: "{app}\Installer.cmd"; WorkingDir: "{app}"
 Name: "{group}\{cm:Restore}"; Filename: "{app}\Restaurer.cmd"; WorkingDir: "{app}"
 Name: "{group}\Notice"; Filename: "{app}\FULL-INSTALL-GUIDE.md"
 [Run]
-Filename: "{app}\Installer.cmd"; Description: "{cm:RunPatch}"; Flags: postinstall shellexec skipifsilent unchecked
+Filename: "{app}\Installer.cmd"; Description: "{cm:RunPatch}"; Flags: postinstall shellexec skipifsilent
 [Code]
 function InitializeSetup(): Boolean;
 begin
