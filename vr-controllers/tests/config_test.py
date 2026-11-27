@@ -36,6 +36,12 @@ class ConfigTests(unittest.TestCase):
    self.assertEqual(c.runtime_family('oculus_openxr_64.json'),'Meta / Oculus')
    self.assertEqual(c.runtime_family('vdxr.json'),'Virtual Desktop / VDXR')
    self.assertEqual(c.runtime_family('unknown.json'),'Autre / inconnu')
+ def test_runtime_malformed_and_size(self):
+  with tempfile.TemporaryDirectory() as d:
+   p=Path(d)/'runtime.json'
+   for payload in (b'[]',b'{"runtime":[]}',b'{"runtime":{"library_path":"x"},"file_format_version":""}',b'{}'+b' '*(1024*1024),b'\xff'):
+    p.write_bytes(payload);r=c.inspect_runtime(p,'test')
+    self.assertFalse(r['manifest_ok']);self.assertFalse(r['library_ok']);self.assertTrue(r['error'])
  def test_preserve_unknown(self):
   with tempfile.TemporaryDirectory() as d:
    p=Path(d)/'edup-vr-tools.ini';p.write_text('[Other]\nFoo=bar\n');c.save(p,c.defaults());self.assertIn('Foo = bar',p.read_text())
