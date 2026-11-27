@@ -14,5 +14,5 @@ int main(){
  Pose moved{{2,1,3},{0,.70710678f,0,.70710678f}};Pose movedEye{moved.p+rotate(moved.q,left.p),moved.q};
  assert(eyeLine(s,moved,movedEye,f,a));assert(eyeLine(s,head,left,f,b));assert(std::abs(a.a.x-b.a.x)<.00001f);
  Fov asym{-.5f,.9f,-.7f,.8f};assert(eyeLine(s,head,head,asym,a));assert(std::abs(a.a.x-.5f)>.05f);
- Snapshot ss;ss.tick=100;assert(fresh(ss,200));assert(!fresh(ss,201));assert(!fresh(ss,99));ss.version=1;assert(!fresh(ss,100));ss.version=4;ss.controlMode=6;assert(!fresh(ss,100));ss.controlMode=4;ss.leftHanded=2;assert(!fresh(ss,100));ss.leftHanded=1;assert(fresh(ss,100));
+ Snapshot ss;ss.tick=100;assert(fresh(ss,200));assert(!fresh(ss,201));assert(!fresh(ss,99));ss.version=1;assert(!fresh(ss,100));ss.version=5;ss.controlMode=6;assert(!fresh(ss,100));ss.controlMode=4;ss.leftHanded=2;assert(!fresh(ss,100));ss.leftHanded=1;assert(fresh(ss,100));
 }
