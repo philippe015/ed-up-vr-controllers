@@ -76,11 +76,11 @@ public:
       !gestureLocked_&&!chordBlocked_&&!weaponBusy_&&(held_.none()||(radialAction_!=Count&&held_[radialAction_]));
     auto menu=radial_.update(r.x,r.y,r.primary,clean,dt);
     if(!clean||!radial_.active()){radialAction_=Count;radialPulse_=0;}
+    constexpr Action choices[]={SelectPrimaryWeapon,EnergyLink,ProfileAnalyser,SuitTool,SelectSecondaryWeapon,Holster,Flashlight,ToolMode};
     if(menu.confirmed>=0){
-     constexpr Action choices[]={SelectPrimaryWeapon,EnergyLink,ProfileAnalyser,SuitTool,SelectSecondaryWeapon,Holster,Flashlight,ToolMode};
      radialAction_=choices[menu.confirmed];radialPulse_=.08f;
     }
-    if(radialPulse_>0&&clean&&radialAction_!=Count&&r.primary){o.held[radialAction_]=true;radialPulse_-=dt;}
+    if(radialPulse_>0&&clean&&radialAction_!=Count&&r.primary&&menu.sector>=0&&choices[menu.sector]==radialAction_){o.held[radialAction_]=true;radialPulse_-=dt;}
     else {radialAction_=Count;radialPulse_=0;}
     o.radialVisible=menu.visible;o.radialIndex=menu.sector;held_=o.held;return o;
    }
