@@ -4,6 +4,16 @@ Windows x64, installation locale hors ligne, sans mise à jour automatique du pr
 
 Pour activer les commandes à pied, définir EDUP_VR_ONFOOT=1 dans les variables d'environnement utilisateur Windows, puis redémarrer complètement Steam / le lanceur avant de démarrer le jeu. F10 active le mode à pied. Réglages dans edup-vr-tools.ini. Les fonctions expérimentales restent désactivées par défaut. Ne pas utiliser un menu VR invisible. Le runtime OpenXR est celui configuré dans Windows.
 
+## Installation guidée
+
+1. Lancer le futur assistant Windows x64 et choisir la langue de Setup.
+2. Le choix de lancer l'installation du patch est proposé en fin de Setup. Vous pouvez aussi utiliser Installer.cmd.
+3. Sélectionner le dossier détecté (Steam ou Epic) ou utiliser Parcourir. La détection est indicative et en lecture seule, elle ne modifie aucun lanceur. Les installations Frontier ou personnalisées non détectées restent accessibles manuellement.
+4. Confirmer le dossier et l'opération. Aucune copie si vous annulez. Suivre les trois étapes de vérification, sauvegarde et installation dans la console.
+5. Utiliser Verifier.cmd (ou le raccourci de vérification du menu Démarrer) pour tester le dossier avant d'installer, sans modifier le jeu. Restaurer.cmd permet la récupération.
+
+L'assistant et la console du module utilisent le français ; l'enveloppe Setup est bilingue. Les commandes de diagnostic en ligne de commande restent disponibles. La détection n'est pas un test de compatibilité : les vérifications de fichiers et de sauvegardes restent obligatoires.
+
 ## Restaurer ou réinstaller
 
 Fermer le jeu puis exécuter Restaurer.cmd et choisir le même dossier. Les fichiers binaires et les notices modifiés par un autre programme bloquent la restauration afin d'éviter un écrasement. Les réglages modifiés (edup.ini, edup_profile.ini, edup-vr-tools.ini) sont copiés et vérifiés par SHA-256 dans .edup-vr-preview-backup/user-settings avant la restauration. Les fichiers de configuration sauvegardés portent leur empreinte et l'extension .bak ; ils ne sont pas réappliqués automatiquement.
