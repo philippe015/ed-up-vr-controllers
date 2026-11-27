@@ -1,3 +1,9 @@
+# v0.9.19 development — Menu render safety
+
+The radial and wrist menus now require a single-use receipt from the preceding successful stereo compose, matching the selected sector and no older than 100 ms. Both eyes must draw the full menu inside a conservative screen margin. Missing receipts, mismatched sectors, tracking loss and conflicting input inhibit confirmation until neutral. The receipt indicates successful draw submission, not proof of headset presentation or game-side action. Keep experimental menus disabled if invisible. Windows integration and physical headset validation are still required. Automatic repair is a separate roadmap item.
+
+---
+
 # v0.9.17 — Wrist panel (experimental)
 
 Optional Movement/WristMenu=1 (default 0), ToolLayer=1. WristMenu implies the eight-sector radial menu and places it above the tracked support controller, facing the head. Hold support grip, bring that controller in front of the headset at a comfortable distance, deflect dominant stick for at least 120 ms, confirm with dominant A. Return stick and button to neutral. Moving the support controller outside the permitted region or losing tracking cancels selection until neutral. Release grip to cancel. The panel is an approximation attached to a controller, not anatomical wrist tracking or native inventory; no direct finger touch. Requires compatible stereo overlay; do not use if not visible. Protocol v6 (older viewers incompatible). Windows and physical headset tests pending.
