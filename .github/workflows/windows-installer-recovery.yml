@@ -31,3 +31,8 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           & vr-controllers/installer/test-full-install.ps1 -Package "$env:RUNNER_TEMP/edup-synthetic-package/package"
+      - name: Verify read-only Steam and Epic folder discovery
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & vr-controllers/installer/test-find-game.ps1 -Package "$env:RUNNER_TEMP/edup-synthetic-package/package"
