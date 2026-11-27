@@ -26,12 +26,12 @@ static unsigned readNumber(const wchar_t* path,const wchar_t* section,const wcha
  if(errno||end==v||*end||value>max)throw std::invalid_argument("invalid setting");return static_cast<unsigned>(value);
 }
 Bindings loadToolBindings(const wchar_t* path,Bindings base){
- const wchar_t* names[]={L"Forward",L"Back",L"Left",L"Right",L"Jump",L"Interact",L"Crouch",L"Sprint",L"CycleTool",L"Reload",L"Primary",L"Secondary",L"EnergyLink",L"ProfileAnalyser",L"SuitTool",L"Holster",L"Flashlight",L"ToolMode"};
+ const wchar_t* names[]={L"Forward",L"Back",L"Left",L"Right",L"Jump",L"Interact",L"Crouch",L"Sprint",L"CycleTool",L"Reload",L"Primary",L"Secondary",L"EnergyLink",L"ProfileAnalyser",L"SuitTool",L"Holster",L"Flashlight",L"ToolMode",L"SelectPrimaryWeapon",L"SelectSecondaryWeapon"};
  static_assert(sizeof(names)/sizeof(*names)==Count);
  for(unsigned i=0;i<Count;++i){
-  const bool tool=i>=EnergyLink;const auto& k=base[i];unsigned old=k.kind==Binding::MouseLeft?256:k.kind==Binding::MouseRight?257:k.kind==Binding::Keyboard?k.scan:0;
+  const bool tool=i>=EnergyLink; const bool weapon=i>=SelectPrimaryWeapon;const auto& k=base[i];unsigned old=k.kind==Binding::MouseLeft?256:k.kind==Binding::MouseRight?257:k.kind==Binding::Keyboard?k.scan:0;
   wchar_t def[16]{};std::swprintf(def,16,L"0x%X",old);
-  const unsigned v=readNumber(path,tool?L"Tools":L"Bindings",names[i],def,257,0);
+  const unsigned v=readNumber(path,weapon?L"Weapons":tool?L"Tools":L"Bindings",names[i],def,257,0);
   if(v==256||v==257){if(tool)throw std::invalid_argument("tool must use keyboard");base[i]={0,false,v==256?Binding::MouseLeft:Binding::MouseRight};}
   else if(v>127||v==0x44)throw std::invalid_argument("invalid physical scan code");
   else base[i]=v?Binding{static_cast<unsigned short>(v),false,Binding::Keyboard}:Binding{};
@@ -41,10 +41,22 @@ Bindings loadToolBindings(const wchar_t* path,Bindings base){
 Settings loadAimSettings(const wchar_t* path){
  Settings s;
  s.motionAim=readNumber(path,L"MotionAim",L"Enabled",L"1",1)!=0;
+ s.twoHandAim=readNumber(path,L"MotionAim",L"TwoHandEnabled",L"0",1)!=0;
+ s.leftHanded=readNumber(path,L"Movement",L"LeftHanded",L"0",1)!=0;
  s.invertY=readNumber(path,L"MotionAim",L"InvertY",L"0",1)!=0;
  const auto sensitivity=readNumber(path,L"MotionAim",L"PixelsPerDegree",L"10",30);if(!sensitivity)throw std::invalid_argument("zero aim sensitivity");
  s.aimPixelsPerDegree=float(sensitivity);
  s.lookPixelsPerSecond=float(readNumber(path,L"Movement",L"LookPixelsPerSecond",L"900",3000));
+ s.snapMode=readNumber(path,L"Movement",L"SnapMode",L"0",3);
+ s.snapPixelsPerDegree=readNumber(path,L"Movement",L"SnapPixelsPerDegree",L"10",30);
+ if(!s.snapPixelsPerDegree)throw std::invalid_argument("zero snap sensitivity");
+ s.extraLookDeadzonePercent=readNumber(path,L"Movement",L"ExtraLookDeadzonePercent",L"0",40);
+ s.equipmentGestures=readNumber(path,L"Movement",L"EquipmentGestures",L"0",1)!=0;
+ s.equipmentScalePercent=readNumber(path,L"Movement",L"EquipmentScalePercent",L"100",130);if(s.equipmentScalePercent<70)throw std::invalid_argument("invalid equipment scale");
+ s.wristMenu=readNumber(path,L"Movement",L"WristMenu",L"0",1)!=0;
+ s.radialMenu=readNumber(path,L"Movement",L"RadialMenu",L"0",1)!=0;
+ s.weaponSelect=readNumber(path,L"Movement",L"WeaponSelect",L"0",1)!=0;
+ s.strictTools=readNumber(path,L"Movement",L"StrictTools",L"0",1)!=0;
  s.toolLayer=readNumber(path,L"Movement",L"ToolLayer",L"1",1)!=0;
  return s;
 }
@@ -52,6 +64,7 @@ VisualSettings loadVisualSettings(const wchar_t* path){
  VisualSettings v;
  auto flag=[&](const wchar_t* key,const wchar_t* env){wchar_t e[4]{};auto n=GetEnvironmentVariableW(env,e,4);if(n==1&&(e[0]==L'0'||e[0]==L'1'))return e[0]==L'1';return readNumber(path,L"Visual",key,L"0",1)!=0;};
  v.hands=flag(L"Hands",L"EDUP_VR_HANDS");v.overlay=flag(L"Overlay",L"EDUP_VR_OVERLAY");v.laser=flag(L"Laser",L"EDUP_VR_LASER");v.haptics=flag(L"Haptics",L"EDUP_VR_HAPTICS");
+ v.objectLab=readNumber(path,L"Visual",L"ObjectLab",L"0",1)!=0;
  v.hapticStrength=readNumber(path,L"Visual",L"HapticPercent",L"25",100)/100.f;return v;
 }
 struct WindowsBridge::Impl {
@@ -73,13 +86,13 @@ struct WindowsBridge::Impl {
  void watch(){for(;;){std::this_thread::sleep_for(std::chrono::milliseconds(10));std::lock_guard<std::mutex> l(mutex);if(quit)return;if((active&&(sampleExpired(GetTickCount64(),lastTick)||!focus()))||(!active&&sent.any())){if(!release())fault=true;}}}
  InteractionReport submit(const Sample& sample){std::lock_guard<std::mutex> l(mutex);auto now=Clock::now();float dt=active?std::chrono::duration<float>(now-last).count():0;last=now;lastTick=GetTickCount64();
   if(!sample.enabled||!sample.focused||!focus()||fault||!sample.hand[0].ready||!sample.hand[1].ready){if(!release())fault=true;if(!sample.enabled&&sent.none())fault=false;return {};}
-  if(dt>=.1f){if(!release())fault=true;return {};}
+  if(!std::isfinite(dt)||dt<0||dt>=.1f){if(!release())fault=true;return {};}
   active=true;auto out=mapper.update(sample,dt);const Keys before=sent;
   if(!dispatch(sent,out.held,[this](Action a,bool d){return send(a,d);})){fault=true;release();return {};}
   if(out.dx||out.dy){if(!focus()){if(!release())fault=true;return {};}
    INPUT m{};m.type=INPUT_MOUSE;m.mi.dx=out.dx;m.mi.dy=out.dy;m.mi.dwFlags=MOUSEEVENTF_MOVE;if(SendInput(1,&m,sizeof(m))!=1){fault=true;release();return {};}}
   if(!focus()){if(!release())fault=true;return {};}
-  InteractionReport report{sent&~before,out.pointing};
+  InteractionReport report{sent&~before,out.pointing,out.mode,out.radialVisible,out.radialIndex};
   for(unsigned i=0;i<Count;++i)if(b[i].kind==Binding::Disabled)report.pressed.reset(i);
   return report;
  }

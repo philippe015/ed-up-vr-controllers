@@ -1,6 +1,9 @@
 name: Integrated ED-UP Windows proof build
 on:
   push:
+    branches: [main, feature/onfoot-vr-enhanced]
+    paths: ['.github/workflows/integrated-windows.yml', 'vr-controllers/**', 'appliquer-integration.py']
+  pull_request:
     branches: [main]
     paths: ['.github/workflows/integrated-windows.yml', 'vr-controllers/**', 'appliquer-integration.py']
   workflow_dispatch:
@@ -11,6 +14,11 @@ concurrency:
   cancel-in-progress: false
 jobs:
   integrated:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [baseline, integrated]
     runs-on: windows-2022
     timeout-minutes: 90
     defaults:
@@ -20,6 +28,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           path: contribution
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -32,6 +41,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Apply experimental integration and record diff
+        if: matrix.variant == 'integrated'
         run: |
           $ErrorActionPreference = 'Stop'
           $actual = git -C upstream rev-parse HEAD
@@ -48,7 +58,37 @@ jobs:
           $expected = @('build.bat','src/openxr/d3d11_stereo.cpp','src/openxr/native_runtime_host.h')
           if ($LASTEXITCODE -ne 0 -or (Compare-Object $changed $expected)) { throw 'Unexpected tracked modifications' }
           git -C upstream diff | Out-File -Encoding utf8 integration.diff
-          @("contribution=$env:GITHUB_SHA","upstream=$actual","kind=experimental-proof") | Out-File -Encoding utf8 build-provenance.txt
+          @("contribution=$(git -C contribution rev-parse HEAD)","upstream=$actual","kind=experimental-proof") | Out-File -Encoding utf8 build-provenance.txt
+      - name: Create local clean experimental packaging revision
+        if: matrix.variant == 'integrated'
+        run: |
+          $ErrorActionPreference = 'Stop'
+          git -C upstream add -- build.bat src/openxr/d3d11_stereo.cpp src/openxr/native_runtime_host.h vr-controllers
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot stage integration' }
+          git -C upstream -c user.name="EDUP preview CI" -c user.email="ci@example.invalid" commit -m "Local experimental integration proof"
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot commit integration locally' }
+          $tag = 'v0.9.18-preview'
+          git -C upstream tag $tag
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot create local preview tag' }
+          $stamp = git -C upstream describe --tags --always --dirty
+          if ($LASTEXITCODE -ne 0 -or $stamp -cne $tag -or (git -C upstream status --porcelain --untracked-files=all)) { throw 'Local packaging tree not clean' }
+          Add-Content build-provenance.txt "integration=$(git -C upstream rev-parse HEAD)"
+          Add-Content build-provenance.txt "package=$tag"
+      - name: Record baseline provenance
+        if: matrix.variant == 'baseline'
+        run: |
+          $actual = git -C upstream rev-parse HEAD
+          if ($LASTEXITCODE -ne 0 -or $actual -ne 'ba1de96c84fab3a6dde3f915d4a7fc9bb40adff1') { throw 'Unexpected baseline revision' }
+          @("contribution=$(git -C contribution rev-parse HEAD)","upstream=$actual","kind=baseline-proof") | Out-File -Encoding utf8 build-provenance.txt
+      - name: Compile standalone Windows x64 module and run CTest
+        if: matrix.variant == 'integrated'
+        run: |
+          cmake -S contribution/vr-controllers -B module-build -A x64 "-DOPENXR_INCLUDE_DIR=$env:GITHUB_WORKSPACE/upstream/third_party/openxr/include"
+          if ($LASTEXITCODE -ne 0) { throw 'Module configure failed' }
+          cmake --build module-build --config Release
+          if ($LASTEXITCODE -ne 0) { throw 'Module build failed' }
+          ctest --test-dir module-build -C Release --output-on-failure
+          if ($LASTEXITCODE -ne 0) { throw 'Module tests failed' }
       - name: Install upstream hash-pinned requirements
         working-directory: upstream
         run: |
@@ -94,13 +134,92 @@ jobs:
           }
           & build/smoke.exe build/d3d11.dll
           if ($LASTEXITCODE -ne 0) { throw 'Smoke test failed' }
+      - name: Stage Windows VR test binaries (not an installer)
+        if: success() && matrix.variant == 'integrated'
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $stage = 'vr-test-build'
+          New-Item -ItemType Directory -Path $stage | Out-Null
+          $files = @('d3d11.dll','edvr_openxr_graphics.dll','edvr_openxr_runtime.dll','openvr_api.dll','openxr_loader.dll','OPENXR-LOADER-LICENSE.txt','full_build_receipt.json')
+          foreach ($file in $files) {
+            $source = Join-Path 'upstream/build' $file
+            if (!(Test-Path -LiteralPath $source -PathType Leaf)) { throw "Missing test build file: $file" }
+            Copy-Item -LiteralPath $source -Destination $stage
+          }
+          Copy-Item module-build/Release/edup_hands_viewer.exe $stage
+          Copy-Item contribution/vr-controllers/edup-vr-tools.ini $stage
+          Copy-Item contribution/vr-controllers/control_center.py $stage
+          Copy-Item contribution/vr-controllers/README.md "$stage/VR-README.md"
+          Copy-Item upstream/LICENSE "$stage/ED-UP-LICENSE.txt"
+          Copy-Item contribution/vr-controllers/LICENSE "$stage/VR-LICENSE.txt"
+          Copy-Item build-provenance.txt $stage
+          Copy-Item integration.diff $stage
+          @('EXPERIMENTAL BUILD OUTPUT ONLY - NOT A COMPLETE INSTALLER.', 'Do not install or mix these files with another release.', 'Baseline comparison, dependency/license packaging and physical Quest 3 validation are separate gates.') | Set-Content "$stage/TEST-ONLY.txt"
+          Get-ChildItem -LiteralPath $stage -File | Sort-Object Name | ForEach-Object { '{0}  {1}' -f (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant(), $_.Name } | Set-Content -Encoding ascii "$stage/SHA256SUMS"
+      - name: Upload Windows x64 test build output
+        if: success() && matrix.variant == 'integrated'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: ED-UP-VR-v0.9.18-preview-Windows-x64-test-build
+          path: vr-test-build/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Package clean native build using upstream receipt and version gates
+        if: success() && matrix.variant == 'integrated'
+        working-directory: upstream
+        run: |
+          cmd /c "package.bat 0.9.18-preview"
+          if ($LASTEXITCODE -ne 0) { throw 'Upstream packaging failed' }
+      - name: Assemble offline VR-only installer and verify fixture recovery
+        if: success() && matrix.variant == 'integrated'
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = (Resolve-Path contribution/vr-controllers/installer).Path
+          $payload = Join-Path $root 'full-payload'
+          python "$root/stage_full.py" upstream/dist/ed-up-0.9.18-preview.zip $payload contribution/vr-controllers build-provenance.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Offline package staging failed' }
+          & "$root/test-full-install.ps1" -Package $payload
+          $iscc = Get-Command ISCC.exe -ErrorAction SilentlyContinue
+          if ($iscc) { $compiler = $iscc.Source } else {
+            $compiler = Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'
+            if (!(Test-Path -LiteralPath $compiler)) { $compiler = Join-Path $env:ProgramFiles 'Inno Setup 6\ISCC.exe' }
+          }
+          if (!(Test-Path -LiteralPath $compiler)) { throw 'Inno Setup compiler missing' }
+          & $compiler "$root/full-setup.iss"
+          if ($LASTEXITCODE -ne 0) { throw 'Full setup compile failed' }
+          $setup = Join-Path $root 'output/ED-UP-VR-Full-Setup-v0.9.18-preview-x64.exe'
+          if (!(Test-Path -LiteralPath $setup -PathType Leaf)) { throw 'Missing full setup' }
+          $target = Join-Path $env:RUNNER_TEMP 'EDUP-VR-Full-Setup-Test'
+          if (Test-Path -LiteralPath $target) { throw 'Fixture target already exists' }
+          $p = Start-Process -FilePath $setup -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/LANG=french',('/DIR="' + $target + '"')) -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "Full setup exit: $($p.ExitCode)" }
+          & "$root/test-full-install.ps1" -Package $target
+          $uninstaller = @(Get-ChildItem -LiteralPath $target -Filter 'unins*.exe')
+          if ($uninstaller.Count -ne 1) { throw 'Expected one wrapper uninstaller' }
+          $p = Start-Process -FilePath $uninstaller[0].FullName -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART' -Wait -PassThru
+          if ($p.ExitCode -ne 0 -or (Test-Path -LiteralPath (Join-Path $target 'install-patch.ps1'))) { throw 'Wrapper uninstall failed' }
+          New-Item -ItemType Directory -Path full-installer | Out-Null
+          Copy-Item -LiteralPath $setup full-installer/
+          Copy-Item "$payload/FULL-INSTALL-GUIDE.md" full-installer/
+          Copy-Item "$payload/build-provenance.txt" full-installer/
+          Get-ChildItem -LiteralPath full-installer -File | Sort-Object Name | ForEach-Object { '{0}  {1}' -f (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant(), $_.Name } | Set-Content -Encoding ascii full-installer/SHA256SUMS
+      - name: Upload experimental full Windows installer proof
+        if: success() && matrix.variant == 'integrated'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: ED-UP-VR-Full-Setup-v0.9.18-preview-x64
+          path: full-installer/
+          if-no-files-found: error
+          retention-days: 14
       - name: Upload proof diagnostics (not a release or installer)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: integration-proof-diagnostics
+          name: integration-proof-${{ matrix.variant }}-diagnostics
           path: |
             integration.diff
             build-provenance.txt
             upstream/build/**/*.log
+            upstream/build/full_build_receipt.json
+            module-build/Testing/Temporary/LastTest.log
           if-no-files-found: warn

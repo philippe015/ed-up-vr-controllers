@@ -1,3 +1,97 @@
+# v0.9.19 development — Menu render safety
+
+The radial and wrist menus now require a single-use receipt from the preceding successful stereo compose, matching the selected sector and no older than 100 ms. Both eyes must draw the full menu inside a conservative screen margin. Missing receipts, mismatched sectors, tracking loss and conflicting input inhibit confirmation until neutral. The receipt indicates successful draw submission, not proof of headset presentation or game-side action. Keep experimental menus disabled if invisible. Windows integration and physical headset validation are still required. Automatic repair is a separate roadmap item.
+
+---
+
+# v0.9.17 — Wrist panel (experimental)
+
+Optional Movement/WristMenu=1 (default 0), ToolLayer=1. WristMenu implies the eight-sector radial menu and places it above the tracked support controller, facing the head. Hold support grip, bring that controller in front of the headset at a comfortable distance, deflect dominant stick for at least 120 ms, confirm with dominant A. Return stick and button to neutral. Moving the support controller outside the permitted region or losing tracking cancels selection until neutral. Release grip to cancel. The panel is an approximation attached to a controller, not anatomical wrist tracking or native inventory; no direct finger touch. Requires compatible stereo overlay; do not use if not visible. Protocol v6 (older viewers incompatible). Windows and physical headset tests pending.
+
+---
+
+# v0.9.16 — Experimental radial menu
+
+Set Movement/RadialMenu=1 (default 0) and ToolLayer=1, configure keyboard bindings, restart. Hold support grip, wait for neutral, deflect dominant stick to open the numbered stereo wireframe wheel. Hold the desired direction for at least 120 ms, then press dominant A to confirm once. Return stick and button to neutral before another selection. Release support grip to cancel. Clockwise from top: 1 primary weapon, 2 energy link, 3 profile analyser, 4 suit tool, 5 secondary weapon, 6 holster, 7 flashlight, 8 tool mode. No movement or firing in menu mode. Tracking loss or conflicting input blocks confirmation. Replaces stick-only weapon selection when enabled; normal button and grip gestures remain. Requires integrated patch and compatible Direct3D ClearView overlay; display not yet tested on headset. Do not use if the wheel is not visible. Numbered sectors, not native game inventory, no game-state confirmation. Snapshot protocol v5; old viewers incompatible. Wrist UI still pending.
+
+---
+
+# v0.9.14 — Object Lab (experimental 6DoF)
+
+The new optional [Visual] ObjectLab=1 enables an exclusive diagnostic scene when F10 is activated on foot. It requires the integrated patch (not the tools installer alone). A small wireframe cube appears within comfortable reach. Release both grips to arm, place either tracked controller within 12 cm of the cube centre and squeeze its grip. The cube follows the controller's position and orientation in six degrees of freedom, preserving its initial offset. Release the grip to leave the cube at its current pose. No gravity simulation, throwing or native collisions. Simultaneous grabs are rejected. Focus/tracking loss clears the scene. The lab stops the keyboard/mouse bridge while active; disable ObjectLab and restart the game for normal commands. The desktop demo shows a simulated static cube, not actual controller tracking. Live viewer protocol bumped to v4 with a new local channel; old viewers are incompatible. The experimental overlay does not use the game's depth buffer, so game geometry cannot occlude the cube.
+
+This implements manipulation of a patch-owned 3D test object, not native Odyssey objects, weapon models or inventory. No supported game-object API has been established in the existing input/overlay architecture. Native interaction needs an authorized engine interface for object identity, transforms, physics, collision, inventory/state updates and multiplayer synchronization. No memory scanning, guessed offsets or game state modification added. Windows and headset tests pending.
+
+---
+
+# v0.9.13 — Immersive Equipment (experimental)
+
+Optional `EquipmentGestures=1` under [Movement] (default 0); requires ToolLayer=1. Hold support grip first, wait for neutral, then position dominant hand in a virtual zone and hold its grip for 200 ms. A single short key press is generated; release both hands to neutral between gestures. Use the existing weapon/tool bindings, disabled until configured; reload uses existing Reload binding. No movement, camera motion or primary/secondary action in the selection layer. Zones are relative to headset yaw and height, not measured body position. Scale 70–130% (default 100), seated or unusual posture may require adjustment; do not reach beyond comfortable range. Loss of tracking, conflicting inputs or zone changes cancel. Existing button controls remain available.
+
+Dominant hip = secondary weapon; dominant rear shoulder = primary weapon; opposite upper/mid/lower chest = EnergyLink / ProfileAnalyser / SuitTool; dominant front chest = reload. Handedness mirrors zones. These are virtual key shortcuts, not native 3D grabbing. Radial graphical equipment menu, wrist UI and physical magazine manipulation remain unimplemented. Compilation and hardware validation pending.
+
+---
+
+# v0.9.12 — Valve Index controller profile (experimental)
+
+Adds the standard Valve Index OpenXR interaction profile alongside Touch, Touch Plus and Khronos Simple. Index uses A/B on both hands, thumbsticks, analog trigger and squeeze value, grip/aim pose and haptics. Left A/B take the logical roles of Touch X/Y; right A/B keep their normal roles. Existing handedness, tool and weapon layers remain unchanged. No system button interception, finger tracking or runtime-specific driver. Runtime binding remapping and grip thresholds may need calibration on physical hardware. Profile selection is performed by the OpenXR runtime; the configured runtime diagnostic is not a connected-controller detector.
+
+Reference: https://registry.khronos.org/OpenXR/specs/1.0-khr/html/xrspec.html (Valve Index Controller Profile). Compile-time profile tests added. The installer workflow now also compiles the full Windows input module using pinned upstream OpenXR headers; this is not a full ED-UP game build. Actual Valve Index and Quest tests remain pending. Vive wands and native Pico profiles remain future work.
+
+---
+
+# v0.9.11 — SteamVR / OpenXR diagnostics
+
+New SteamVR / OpenXR tab in the Control Center. Read-only detection of the active 64-bit OpenXR manifest (XR_RUNTIME_JSON override or HKLM registry), known SteamVR / Meta / VDXR filename conventions, manifest structure and runtime DLL presence. Unknown runtimes remain unknown; presence of a manifest is not evidence of an active XR session or connected controllers. The separate PowerShell diagnostic also reports provider and library path. No registry writes, automatic runtime switching or runtime DLL loading. Choose the runtime using SteamVR or Meta Quest Link settings, then restart the game. Current controller bindings remain Touch/Touch Plus and limited Khronos Simple Controller; Index, Vive, Pico and actual controller connectivity remain future work. Automated fixture tests added; physical SteamVR/Quest 3 validation pending.
+
+---
+
+# v0.9.10 — Manual weapon selection (experimental)
+
+Optional `[Movement] WeaponSelect=1` (default 0, requires ToolLayer=1). Configure `[Weapons] SelectPrimaryWeapon=0x02` and `SelectSecondaryWeapon=0x03` (physical number row 1 and 2 examples), or choose keys in the new Armes tab of the French Control Center. Bind the matching actions in the game's on-foot controls; 0 disables either binding. Existing bindings remain unchanged.
+
+Hold support grip, let both sticks and buttons return to neutral, then deflect dominant stick up for primary weapon or down for secondary weapon. Release stick to neutral between selections. One brief key transition per gesture, no repeating, no auto-fire, no movement or camera rotation in the tool layer. Simultaneous buttons, triggers, support stick movement, diagonal deflection or dominant grip block selection until a clean release. Release support grip and return to neutral before normal gameplay. Dominant trigger remains the ordinary manual primary action; support trigger remains secondary, and existing holster (support grip + dominant secondary button) and reload (dominant stick click outside layer) remain unchanged. Handedness mirrors roles. Optional haptic cue confirms only input submission.
+
+This is keyboard/mouse mapping for fictional in-game equipment, not native 3D weapon grabbing, game-state detection or independent aiming. A brief selection pulse may need adjustment if the game misses it; physical test pending. No change to the previously validated v0.9.9 diagnostic installer. New source/tests need compilation and headset validation.
+
+---
+
+# v0.9.8 — Performance & Stability (experimental)
+
+The mapper skips dispatch when key states are unchanged, rejects intervals at or above 100 ms, and consumes a snap gesture even if the sample duration is zero (no delayed turn). The Windows bridge rejects negative or non-finite intervals. Added 80,000 deterministic mixed-mode samples across both handedness profiles and four snap settings, plus the existing 20,000 samples. Checks cover fault suppression, contradictory movement, bounded mouse deltas and exclusive tool/two-hand modes. These are planned test iterations, not verified results. No measured performance gain claimed; upstream CPU benchmark failure remains unresolved. Windows and headset validation pending.
+
+---
+
+# v0.9.7 — Controller diagnostics (experimental)
+
+The local desktop hands viewer displays the mapper mode and handedness from the actual bridge report. Snapshot protocol v3 uses a separate EDUPHands09 channel; use matching viewer and runtime binaries. Old viewers cannot connect to the new channel. Headset wireframe rendering remains as before; mode labels are desktop only, not an in-headset wrist menu. No game-side equipment status is inferred. The local channel remains optional and nonblocking. Protocol validation rejects unknown modes and invalid handedness. Automated and Windows tests pending.
+
+---
+
+# v0.9.6 — Odyssey Tools Enhanced (experimental)
+
+The French Control Center now has a Préréglage outils button. It proposes six example keyboard bindings (3, 4, 5, H, T, M), checks conflicts with existing actions, and modifies only the form until the user explicitly saves. Match bindings in the game manually. `[Movement] StrictTools=1` optionally blocks tool selection when either stick is outside neutral or the dominant grip or triggers are held; release conflicting inputs and all selection buttons before retrying. Default 0 preserves existing behavior. Existing haptic feedback still confirms input submission only, never game-side success. EnergyLink, scanner and suit-specific tools remain manual; the module does not detect a charging port or tool state. New C++ and Python regression tests are included but not yet verified. Windows compilation and physical headset tests remain pending.
+
+---
+
+# v0.9.5 — VR Comfort (experimental)
+
+New French Control Center Confort VR tab. `[Movement] SnapMode=0` retains continuous rotation; 1, 2, 3 select nominal 15, 30, 45 degree turns. `SnapPixelsPerDegree=10` is a calibration setting (1–30); actual in-game angles are not guaranteed because output is a relative mouse pulse, not a native OpenXR camera rotation. Stick horizontal threshold 0.75, rearm below 0.20. No repeated or queued turns. Motion clutch and tool transitions clear the latch. `ExtraLookDeadzonePercent=0` (0–40) adds deadzone to continuous look axes after InputCore processing; it does not alter movement or snap thresholds. Existing defaults unchanged. Both handedness profiles supported. Restart required after saving. Automated motion regression tests added; Windows build and headset comfort not yet verified.
+
+---
+
+# v0.9.4 — Dual Hand Profile (experimental)
+
+New `[Movement] LeftHanded=1` mirrors all logical controller roles (default 0). Left-handed mode: left stick looks, right stick moves; left grip aims and right grip selects tools. For two-hand mode hold dominant grip first, then support grip. Laser and haptic channels follow the selected roles. Physical hand rendering remains unchanged. The French Control Center exposes LeftHanded and TwoHandEnabled. Restart the game after changes. Two-hand mode remains opt-in; no firing or walking in that mode. Tests cover mirrored movement, two-hand aim and tool selection. Compilation and headset testing pending.
+
+---
+
+# v0.9.3 — Experimental two-hand motion integration
+
+Option `[MotionAim] TwoHandEnabled=1` (default 0; requires Enabled=1). From neutral, hold right grip first to enter normal motion aim, then hold left grip to enter two-hand mode. Left grip alone retains tool selection. While both grips are held, only relative camera rotation is emitted; ordinary actions including firing and movement are suppressed. Release both controllers to neutral to resume. Tracking loss, invalid geometry, button/trigger activation or discontinuity resets the mapper. The single-hand laser is intentionally not displayed in two-hand mode. No independent 3D weapon control, no automatic targeting. Experimental right-dominant mode only. Windows build and physical tests pending.
+
+---
+
 # v0.9.0 — Stability+ (prototype)
 
 Validation renforcée des données analogiques (NaN, infinis et valeurs hors limites) et des poses OpenXR (coordonnées finies, quaternion normalisé). Les valeurs invalides bloquent le mapper au lieu de l’armer au neutre. Surveillance du délai de 100 ms avec horloge monotone Windows. Tests de défauts et 20 000 échantillons pseudo-aléatoires reproductibles. Diagnostic statique du runtime OpenXR Windows et matrice d’essais physiques dans `VALIDATION-WINDOWS.md`.

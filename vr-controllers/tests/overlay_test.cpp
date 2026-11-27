@@ -1,4 +1,5 @@
 #include "eye_projection.hpp"
+#include "menu_receipt.hpp"
 #include <cassert>
 #include <limits>
 using namespace edup::vrinput::hands;
@@ -14,5 +15,19 @@ int main(){
  Pose moved{{2,1,3},{0,.70710678f,0,.70710678f}};Pose movedEye{moved.p+rotate(moved.q,left.p),moved.q};
  assert(eyeLine(s,moved,movedEye,f,a));assert(eyeLine(s,head,left,f,b));assert(std::abs(a.a.x-b.a.x)<.00001f);
  Fov asym{-.5f,.9f,-.7f,.8f};assert(eyeLine(s,head,head,asym,a));assert(std::abs(a.a.x-.5f)>.05f);
- Snapshot ss;ss.tick=100;assert(fresh(ss,200));assert(!fresh(ss,201));assert(!fresh(ss,99));ss.version=1;assert(!fresh(ss,100));
+ // Full visibility is distinct from ordinary clipped line rendering.
+ EyeProjector p(head,left,f);bool whole=false;
+ assert(p.line(s,a,&whole)&&whole);
+ assert(p.line({{-100,0,-1},{100,0,-1}},a,&whole)&&!whole);
+ assert(p.line({{0,0,0},{0,0,-1}},a,&whole)&&!whole);
+ MenuReceipt receipt{100,1000,0,2};receipt.mark(0);
+ assert(receipt.consume(101,1001)==-1);
+ receipt={100,1000,0,2};receipt.mark(0);receipt.mark(0);assert(receipt.consume(101,1001)==-1);
+ receipt={100,1000,0,2};receipt.mark(0);receipt.mark(1);
+ assert(receipt.consume(101,1099)==2);assert(receipt.consume(102,1099)==-1);
+ receipt={100,1000,3,2};assert(receipt.consume(101,1100)==-1);
+ receipt={100,1000,3,2};assert(receipt.consume(100,1001)==-1);
+ receipt={100,1000,3,2};assert(receipt.consume(101,999)==-1);
+ receipt={100,1000,3,8};assert(receipt.consume(101,1001)==-1);
+ Snapshot ss;ss.tick=100;assert(fresh(ss,200));assert(!fresh(ss,201));assert(!fresh(ss,99));ss.version=1;assert(!fresh(ss,100));ss.version=6;ss.controlMode=6;assert(!fresh(ss,100));ss.controlMode=4;ss.leftHanded=2;assert(!fresh(ss,100));ss.leftHanded=1;assert(fresh(ss,100));
 }

@@ -1,0 +1,38 @@
+name: Windows installer recovery tests
+on:
+  push:
+    branches: [feature/onfoot-vr-enhanced]
+    paths: ['vr-controllers/installer/**', '.github/workflows/windows-installer-recovery.yml']
+  pull_request:
+    branches: [main]
+    paths: ['vr-controllers/installer/**', '.github/workflows/windows-installer-recovery.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  recovery:
+    runs-on: windows-2022
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: '3.12'
+      - name: Stage synthetic package (never publish)
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          python vr-controllers/installer/test-stage-fixture.py "$env:RUNNER_TEMP/edup-synthetic-package"
+          if ($LASTEXITCODE -ne 0) { throw 'Fixture staging failed' }
+      - name: Verify installation, recovery and reinstall
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & vr-controllers/installer/test-full-install.ps1 -Package "$env:RUNNER_TEMP/edup-synthetic-package/package"
+      - name: Verify read-only Steam and Epic folder discovery
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & vr-controllers/installer/test-find-game.ps1 -Package "$env:RUNNER_TEMP/edup-synthetic-package/package"

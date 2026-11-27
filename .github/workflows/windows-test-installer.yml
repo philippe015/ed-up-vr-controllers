@@ -1,0 +1,109 @@
+name: Windows VR test tools installer
+on:
+  push:
+    branches: [feature/onfoot-vr-enhanced]
+    paths: ['vr-controllers/**', '.github/workflows/windows-test-installer.yml']
+  pull_request:
+    branches: [main]
+    paths: ['vr-controllers/**', '.github/workflows/windows-test-installer.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: vr-test-installer-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  setup:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: windows-2022
+    timeout-minutes: 25
+    defaults:
+      run:
+        shell: powershell
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: '3.12'
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: characterecho-sean/ed-unofficial-patch
+          ref: ba1de96c84fab3a6dde3f915d4a7fc9bb40adff1
+          path: pinned-openxr
+          sparse-checkout: third_party/openxr/include
+          persist-credentials: false
+      - name: Compile Windows module, diagnostic viewer and tests (x64)
+        run: |
+          $ErrorActionPreference = 'Stop'
+          cmake -S vr-controllers -B build-tools -A x64 "-DOPENXR_INCLUDE_DIR=$env:GITHUB_WORKSPACE/pinned-openxr/third_party/openxr/include" -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
+          if ($LASTEXITCODE -ne 0) { throw 'Configure failed' }
+          cmake --build build-tools --config Release
+          if ($LASTEXITCODE -ne 0) { throw 'Compile failed' }
+          ctest --test-dir build-tools -C Release --output-on-failure
+          if ($LASTEXITCODE -ne 0) { throw 'CTest failed' }
+          Select-String -LiteralPath build-tools/Testing/Temporary/LastTest.log -Pattern 'prepared CPU ms=','reference CPU ms=' | ForEach-Object { Write-Output $_.Line }
+          if ($LASTEXITCODE -ne 0) { throw 'Tests failed' }
+      - name: Stage allowlisted diagnostic files and build setup
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:GITHUB_WORKSPACE 'vr-controllers/installer'
+          $payload = Join-Path $root 'payload'
+          New-Item -ItemType Directory -Path $payload | Out-Null
+          Copy-Item build-tools/Release/edup_hands_viewer.exe $payload
+          foreach ($file in @('control_center.py','edup-vr-tools.ini','diagnostic-openxr.ps1')) {
+            Copy-Item (Join-Path 'vr-controllers' $file) $payload
+          }
+          Copy-Item vr-controllers/LICENSE (Join-Path $payload 'LICENSE.txt')
+          Copy-Item (Join-Path $root 'open-control-center.cmd') $payload
+          Copy-Item (Join-Path $root 'TEST-GUIDE.md') $payload
+          $sha = git rev-parse HEAD
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot resolve source revision' }
+          @("source=$sha","kind=diagnostic-tools-only","architecture=x64") | Set-Content -Encoding ascii (Join-Path $payload 'build-provenance.txt')
+          $iscc = Get-Command ISCC.exe -ErrorAction SilentlyContinue
+          if ($iscc) { $compiler = $iscc.Source } else {
+            $compiler = Join-Path $env:ProgramFiles 'Inno Setup 6\ISCC.exe'
+            if (!(Test-Path -LiteralPath $compiler)) { $compiler = Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe' }
+          }
+          if (!(Test-Path -LiteralPath $compiler)) { throw 'Inno Setup compiler missing from runner image' }
+          & $compiler (Join-Path $root 'test-tools.iss')
+          if ($LASTEXITCODE -ne 0) { throw 'Inno Setup compilation failed' }
+      - name: Verify silent install and uninstall in isolated runner directory
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $setup = (Resolve-Path 'vr-controllers/installer/output/ED-UP-VR-Test-Setup-v0.9.17-x64.exe').Path
+          $target = Join-Path $env:RUNNER_TEMP 'EDUP-VR-Test-Tools'
+          if (Test-Path -LiteralPath $target) { throw 'Test directory already exists' }
+          $p = Start-Process -FilePath $setup -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/LANG=english',('/DIR="' + $target + '"'),('/LOG="' + $env:RUNNER_TEMP + '\edup-setup.log"')) -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "Setup exit: $($p.ExitCode)" }
+          foreach ($file in @('edup_hands_viewer.exe','control_center.py','edup-vr-tools.example.ini','diagnostic-openxr.ps1','open-control-center.cmd','TEST-GUIDE.md','LICENSE.txt','build-provenance.txt')) {
+            if (!(Test-Path -LiteralPath (Join-Path $target $file) -PathType Leaf)) { throw "Missing installed file: $file" }
+          }
+          if (Get-ChildItem -LiteralPath $target -Filter '*.dll' -Recurse) { throw 'Unexpected DLL installed' }
+          $uninstaller = Get-ChildItem -LiteralPath $target -Filter 'unins*.exe'
+          if (@($uninstaller).Count -ne 1) { throw 'Expected one uninstaller' }
+          $p = Start-Process -FilePath $uninstaller.FullName -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART' -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "Uninstall exit: $($p.ExitCode)" }
+          if (Test-Path -LiteralPath (Join-Path $target 'edup_hands_viewer.exe')) { throw 'Viewer was not removed' }
+          $hash = (Get-FileHash -LiteralPath $setup -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  $([IO.Path]::GetFileName($setup))" | Set-Content -Encoding ascii 'vr-controllers/installer/output/SHA256SUMS'
+      - name: Upload validated diagnostic installer
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: ED-UP-VR-Test-Setup-v0.9.17-x64
+          path: |
+            vr-controllers/installer/output/ED-UP-VR-Test-Setup-v0.9.17-x64.exe
+            vr-controllers/installer/output/SHA256SUMS
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: installer-test-diagnostics
+          path: |
+            build-tools/Testing/Temporary/LastTest.log
+            ${{ runner.temp }}/edup-setup.log
+          if-no-files-found: warn

@@ -2,12 +2,13 @@
 #include <openxr/openxr.h>
 #include <array>
 #include "safety.hpp"
+#include "controller_profiles.hpp"
 namespace edup::vrinput {
 struct Hand {
  bool tracked=false, ready=false, primary=false, secondary=false, stickClick=false;
  float trigger=0, squeeze=0, x=0, y=0;
  XrPosef grip{{0,0,0,1},{0,0,0}}, aim{{0,0,0,1},{0,0,0}};
- XrPath profile=XR_NULL_PATH;
+ XrPath profile=XR_NULL_PATH; uint32_t activeMask=0;
 };
 class InputCore {
 public:
@@ -39,6 +40,6 @@ private:
 #define DECL(n) PFN_xr##n n##_=nullptr;
  EDUP_XR_FUNCS(DECL)
 #undef DECL
- XrResult suggest(const char* profile, bool simple);
+ XrResult suggest(ProfileKind profile);
 };
 }
