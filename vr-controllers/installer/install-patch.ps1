@@ -41,7 +41,7 @@ function PutFile($src,$dst,[bool]$replace){
  try{
   [IO.File]::Copy($src,$tmp,$false)
   if((Hash $src) -ne (Hash $tmp)){throw 'Copie corrompue'}
-  if($replace){[IO.File]::Replace($tmp,$dst,$null)}else{[IO.File]::Move($tmp,$dst)}
+  if($replace){[IO.File]::Replace($tmp,$dst,[NullString]::Value)}else{[IO.File]::Move($tmp,$dst)}
  }finally{if(Test-Path -LiteralPath $tmp){Remove-Item -LiteralPath $tmp -Force}}
 }
 function RestorePatch {
