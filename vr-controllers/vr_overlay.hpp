@@ -10,21 +10,23 @@
 #include "eye_projection.hpp"
 #include "radial_wire.hpp"
 #include "wrist_panel.hpp"
+#include "menu_receipt.hpp"
 namespace edup::vrinput::hands {
 // Only active during the synchronous stereo compose call on its owning thread.
 inline thread_local const Snapshot* activeOverlay=nullptr;
+inline thread_local MenuReceipt* activeReceipt=nullptr;
 class OverlayScope {
- const Snapshot* previous_;
+ const Snapshot* previous_;MenuReceipt* previousReceipt_;
 public:
- explicit OverlayScope(const Snapshot* s):previous_(activeOverlay){activeOverlay=s;}
- ~OverlayScope(){activeOverlay=previous_;}
+ explicit OverlayScope(const Snapshot* s,MenuReceipt* receipt=nullptr):previous_(activeOverlay),previousReceipt_(activeReceipt){activeOverlay=s;activeReceipt=receipt;}
+ ~OverlayScope(){activeOverlay=previous_;activeReceipt=previousReceipt_;}
  OverlayScope(const OverlayScope&)=delete;OverlayScope& operator=(const OverlayScope&)=delete;
 };
 inline Pose xrPose(const XrPosef& p){return {{p.position.x,p.position.y,p.position.z},{p.orientation.x,p.orientation.y,p.orientation.z,p.orientation.w}};}
 // Diagnostic-only overlay. No shader, depth buffer, blending or game model changes.
 // ClearView paints only bounded nonempty rectangles; never call with zero rectangles.
 inline void drawOverlay(ID3D11Device* device,ID3D11DeviceContext* ctx,ID3D11RenderTargetView* rtv,
- const XrPosef& head,const XrView& eye,unsigned width,unsigned height){
+ const XrPosef& head,const XrView& eye,unsigned width,unsigned height,unsigned eyeIndex=2){
  if(!activeOverlay||!device||!ctx||!rtv||!width||!height||width>16384||height>16384)return;
  const auto& snapshot=*activeOverlay;
  if(snapshot.valid[0]!=1&&snapshot.valid[1]!=1&&snapshot.laserValid!=1&&snapshot.objectVisible!=1&&snapshot.radialVisible!=1)return;
@@ -38,11 +40,12 @@ inline void drawOverlay(ID3D11Device* device,ID3D11DeviceContext* ctx,ID3D11Rend
  // original sampling density and clipping. No heap allocation or GPU readback.
  std::array<D3D11_RECT,8*11*49> rects;
  unsigned n=0;
- auto append=[&](Segment line){
-  Line2 l;if(!projection.line(line,l))return;
+ auto append=[&](Segment line,bool* complete=nullptr){
+  Line2 l;bool whole=false;if(!projection.line(line,l,complete?&whole:nullptr)){if(complete)*complete=false;return;}
+  if(complete&&!whole)*complete=false;
   float dx=(l.b.x-l.a.x)*width,dy=(l.b.y-l.a.y)*height;
   unsigned steps=std::clamp(unsigned(std::ceil((std::max)(std::abs(dx),std::abs(dy))/3.f)),1u,48u);
-  if(n+steps+1>rects.size())return;
+  if(n+steps+1>rects.size()){if(complete)*complete=false;return;}
   for(unsigned k=0;k<=steps;++k){float t=float(k)/steps;LONG x=LONG(std::lround(l.a.x*(width-1)+t*(l.b.x-l.a.x)*(width-1)));LONG y=LONG(std::lround(l.a.y*(height-1)+t*(l.b.y-l.a.y)*(height-1)));
    rects[n++]={(std::max)(0L,x-1),(std::max)(0L,y-1),(std::min)(LONG(width),x+2),(std::min)(LONG(height),y+2)};
   }
@@ -52,10 +55,12 @@ inline void drawOverlay(ID3D11Device* device,ID3D11DeviceContext* ctx,ID3D11Rend
  if(snapshot.laserValid==1){append(snapshot.laser);flush(2);}
  if(snapshot.objectVisible==1){for(auto line:snapshot.objectLines)append(line);flush(3);}
  if(snapshot.radialVisible==1){
-  auto sector=[&](unsigned i){const auto& w=radialWire(i);for(unsigned j=0;j<w.size;++j)append(snapshot.wristVisible?wristSegment(w.lines[j],snapshot.wristCenter):w.lines[j]);};
+  bool complete=true;
+  auto sector=[&](unsigned i){const auto& w=radialWire(i);for(unsigned j=0;j<w.size;++j)append(snapshot.wristVisible?wristSegment(w.lines[j],snapshot.wristCenter):w.lines[j],&complete);};
   for(unsigned i=0;i<8;++i)if(int(i)!=snapshot.radialIndex)sector(i);
   flush(4);
   if(snapshot.radialIndex>=0&&snapshot.radialIndex<8){sector(unsigned(snapshot.radialIndex));flush(5);}
+  if(complete&&activeReceipt&&snapshot.radialIndex>=0&&snapshot.radialIndex<8&&width>=64&&height>=64)activeReceipt->mark(eyeIndex);
  }
 }
 }
