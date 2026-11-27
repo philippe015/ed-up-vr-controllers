@@ -25,7 +25,8 @@ public:
   eyeInv_=inverse(eye_.q);valid_=true;
  }
  bool valid() const{return valid_;}
- bool line(Segment line,Line2& out)const{
+ bool line(Segment line,Line2& out,bool* whole=nullptr)const{
+  if(whole)*whole=false;
   if(!valid_||!finite(line.a)||!finite(line.b))return false;
   auto toEye=[&](Vec p){return rotate(eyeInv_,head_.p+rotate(head_.q,p)-eye_.p);};
   Vec a=toEye(line.a),b=toEye(line.b);if(!finite(a)||!finite(b))return false;
@@ -34,7 +35,9 @@ public:
   if(a.z>nearZ){float t=(nearZ-a.z)/(b.z-a.z);a=a+(b-a)*t;a.z=nearZ;}
   if(b.z>nearZ){float t=(nearZ-b.z)/(a.z-b.z);b=b+(a-b)*t;b.z=nearZ;}
   auto project=[&](Vec p){return Screen{(p.x/(-p.z)-l_)/(r_-l_),(u_-p.y/(-p.z))/(u_-d_)};};
-  out={project(a),project(b)};return clipUnit(out);
+  out={project(a),project(b)};
+  if(whole){auto inside=[](Screen p){return std::isfinite(p.x)&&std::isfinite(p.y)&&p.x>=.01f&&p.x<=.99f&&p.y>=.01f&&p.y<=.99f;};*whole=a.z<nearZ&&b.z<nearZ&&inside(out.a)&&inside(out.b);}
+  return clipUnit(out);
  }
 };
 inline bool eyeLine(Segment line,Pose head,Pose eye,Fov f,Line2& out){
