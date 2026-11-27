@@ -6,7 +6,7 @@ bool near(Vec a,Vec b){return lengthSquared(a-b)<1e-8f;}
 int main(){
  ObjectLab lab;Pose head{};std::array<GrabHand,2> h{};
  h[0]={{{-.3f,-.25f,-.45f},{}},0,true};h[1]={{{.3f,-.25f,-.45f},{}},0,true};
- auto tick=[&]{return lab.update(head,true,h);};
+ uint64_t now=0;auto tick=[&]{now+=10;return lab.update(head,true,h,now);};
  auto f=tick();assert(f.visible&&f.owner==-1);Vec start=f.object.p;
  h[1].grip=.8f;assert(tick().owner==-1); // remote grab rejected
  h[1].pose.p=start;assert(tick().owner==-1); // moving while held does not grab
@@ -20,5 +20,9 @@ int main(){
  h[0].tracked=false;assert(!tick().visible);h[0].tracked=true;assert(tick().owner==-1);assert(tick().owner==-1);
  h[0].grip=0;tick();h[0].pose.p=tick().object.p;h[1].pose.p=h[0].pose.p;h[0].grip=h[1].grip=.8f;assert(tick().owner==-1);
  h[0].grip=h[1].grip=0;tick();
+ // A stalled render thread cannot resume an existing grab.
+ h[0].pose.p=tick().object.p;h[0].grip=.8f;assert(tick().owner==0);
+ now+=100;assert(tick().owner==-1);assert(tick().owner==-1);
+ h[0].grip=0;tick();
  h[0].pose.p.x=std::numeric_limits<float>::quiet_NaN();assert(!tick().visible);
 }
