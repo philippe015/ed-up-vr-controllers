@@ -21,12 +21,12 @@ class HostOnFoot {
  hands::Snapshot overlay_{};XrTime overlayTime_=0;
  void clearHands(){lab_.reset();labFrame_={};overlay_={};overlayTime_=0;if(handsEnabled_)handsChannel_.write(hands::Snapshot{});}
  static hands::Pose convert(const XrPosef& p){return {{p.position.x,p.position.y,p.position.z},{p.orientation.x,p.orientation.y,p.orientation.z,p.orientation.w}};}
- void publishHands(XrSpace view,XrSpace base,XrTime t,const InteractionReport& report){
-  if(!handsEnabled_&&!overlayEnabled_)return;hands::Snapshot out;XrPosef head{};const bool headValid=core_.locateHead(view,base,t,head);
-  if(headValid)for(unsigned i=0;i<2;++i){const auto& h=core_.hands()[i];if(h.tracked&&h.ready)hands::set(out,i,hands::make(convert(h.grip),convert(head),i==0,h.trigger,h.squeeze));}
+ void publishHands(XrTime t,const InteractionReport& report,const Sample& sample){
+  if(!handsEnabled_&&!overlayEnabled_)return;hands::Snapshot out;const bool headValid=sample.headTracked;const auto& head=sample.head;
+  if(headValid)for(unsigned i=0;i<2;++i){const auto& h=core_.hands()[i];if(h.tracked&&h.ready)hands::set(out,i,hands::make(convert(h.grip),head,i==0,h.trigger,h.squeeze));}
   out.controlMode=static_cast<uint32_t>(report.mode);out.leftHanded=leftHanded_?1u:0u;
-  if(laserEnabled_&&report.pointing&&out.valid[0]&&out.valid[1]&&pointerRay(convert(core_.hands()[leftHanded_?0:1].aim),convert(head),out.laser))out.laserValid=1;
-  if(headValid&&labEnabled_&&labFrame_.visible){out.objectVisible=1;out.objectOwner=labFrame_.owner;out.objectLines=hands::objectWire(labFrame_.object,convert(head));}
+  if(laserEnabled_&&report.pointing&&out.valid[0]&&out.valid[1]&&pointerRay(convert(core_.hands()[leftHanded_?0:1].aim),head,out.laser))out.laserValid=1;
+  if(headValid&&labEnabled_&&labFrame_.visible){out.objectVisible=1;out.objectOwner=labFrame_.owner;out.objectLines=hands::objectWire(labFrame_.object,head);}
   out.tick=GetTickCount64();
   if(overlayEnabled_){overlay_=out;overlayTime_=t;}
   if(handsEnabled_)handsChannel_.write(out);
@@ -71,14 +71,14 @@ public:
    bridge_->stop();
    std::array<hands::GrabHand,2> hand{};
    for(unsigned i=0;i<2;++i){const auto& h=core_.hands()[i];hand[i]={convert(h.grip),h.squeeze,h.ready&&h.tracked};}
-   labFrame_=lab_.update(sample.head,sample.headTracked,hand);
+   labFrame_=lab_.update(sample.head,sample.headTracked,hand,GetTickCount64());
   }else report=bridge_->submit(sample);
   if(hapticsEnabled_&&hapticStrength_>0&&foregroundGame()){const auto cue=cues(report.pressed);const auto now=GetTickCount64();
    const unsigned support=leftHanded_?1:0, dominant=leftHanded_?0:1;
    if(cue.left&&hapticLimiter_.permit(support,now))core_.pulse(support,hapticStrength_);
    if(cue.right&&hapticLimiter_.permit(dominant,now))core_.pulse(dominant,hapticStrength_);
   }
-  publishHands(view,base,t,report);
+  publishHands(t,report,sample);
  }
  const hands::Snapshot* overlay(XrTime t,bool eligible,bool focused) const {
   return overlayEnabled_&&mode_&&eligible&&focused&&foregroundGame()&&overlayTime_==t&&hands::fresh(overlay_,GetTickCount64())?&overlay_:nullptr;
