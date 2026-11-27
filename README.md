@@ -1,4 +1,4 @@
-# ED-UP VR Controllers — v0.9.13 Experimental
+# ED-UP VR Controllers — v0.9.14 Experimental
 
 **By Philou Cyberpunk — Elite Dangerous: Odyssey / Windows 11 x64 / Meta Quest 3 / OpenXR**
 
@@ -6,18 +6,18 @@
 
 ## Installation automatique — outils de test Windows
 
-[![Télécharger Windows x64](https://img.shields.io/badge/TÉLÉCHARGER-WINDOWS%20x64-238636?style=for-the-badge&logo=windows)](https://github.com/philippe015/ed-up-vr-controllers/actions/runs/45894846539/artifacts/15152768437)
+[![Télécharger Windows x64](https://img.shields.io/badge/TÉLÉCHARGER-WINDOWS%20x64-238636?style=for-the-badge&logo=windows)](https://github.com/philippe015/ed-up-vr-controllers/actions/runs/45895233381/artifacts/15153461970)
 
-**[TÉLÉCHARGER L'INSTALLATEUR DE TEST (ZIP)](https://github.com/philippe015/ed-up-vr-controllers/actions/runs/45894846539/artifacts/15152768437)** — connexion GitHub requise, disponible jusqu'au 10 décembre 2026.
+**[TÉLÉCHARGER L'INSTALLATEUR DE TEST (ZIP)](https://github.com/philippe015/ed-up-vr-controllers/actions/runs/45895233381/artifacts/15153461970)** — connexion GitHub requise, disponible jusqu'au 10 décembre 2026.
 
 [Accéder à la compilation de l'installateur de test](https://github.com/philippe015/ed-up-vr-controllers/actions/workflows/windows-test-installer.yml)
 
-Fichier disponible : `ED-UP-VR-Test-Setup-v0.9.13-x64.exe`. Assistant FR/EN, installation sans administrateur dans LocalAppData, raccourcis, visualiseur simulé, diagnostic OpenXR en lecture seule, panneau de configuration (Python 3.10+ requis) et désinstallation. Le workflow compile les outils, exécute CTest et vérifie installation/désinstallation avant publication de l'artefact. Compilation Windows et tests d'installation/désinstallation réussis le 26 novembre 2026. **Cet installateur ne modifie aucune DLL du jeu et ne permet pas à lui seul de jouer en VR avec les nouvelles commandes.** Le patch complet exige encore validation du build et du conditionnement.
+Fichier disponible : `ED-UP-VR-Test-Setup-v0.9.14-x64.exe`. Assistant FR/EN, installation sans administrateur dans LocalAppData, raccourcis, visualiseur simulé, diagnostic OpenXR en lecture seule, panneau de configuration (Python 3.10+ requis) et désinstallation. Le workflow compile les outils, exécute CTest et vérifie installation/désinstallation avant publication de l'artefact. Compilation Windows et tests d'installation/désinstallation réussis le 26 novembre 2026. **Cet installateur ne modifie aucune DLL du jeu et ne permet pas à lui seul de jouer en VR avec les nouvelles commandes.** Le patch complet exige encore validation du build et du conditionnement.
 
 ### Comment installer : double-cliquer sur le programme
 
 1. Télécharger le ZIP ci-dessus, puis faire **Extraire tout** dans Windows.
-2. Ouvrir le dossier extrait et double-cliquer sur `ED-UP-VR-Test-Setup-v0.9.13-x64.exe`. Vérifier la provenance et l'empreinte SHA-256 fournie avant exécution. L'installateur n'est pas signé ; Windows SmartScreen peut afficher un avertissement.
+2. Ouvrir le dossier extrait et double-cliquer sur `ED-UP-VR-Test-Setup-v0.9.14-x64.exe`. Vérifier la provenance et l'empreinte SHA-256 fournie avant exécution. L'installateur n'est pas signé ; Windows SmartScreen peut afficher un avertissement.
 3. Choisir **Français** ou **English** dans l'assistant.
 4. Lire et accepter l'information sur la portée expérimentale des outils. Suivre les étapes de l'assistant, choisir éventuellement le raccourci bureau et cliquer sur **Installer**.
 5. Les outils sont copiés automatiquement dans `%LOCALAPPDATA%\EDUP-VR-Test-Tools`, sans droits administrateur ni modification des DLL du jeu.
@@ -59,7 +59,11 @@ Maintenir le grip de soutien, puis saisir une zone virtuelle avec le grip domina
 
 ### v0.9.14 — Laboratoire de saisie 3D (expérimental)
 
-Objet cubique virtuel propre au patch : saisie par contact et grip, déplacement et rotation 6DoF, relâchement. Option Visual/ObjectLab désactivée par défaut, mode exclusif sans commandes clavier/souris du jeu. Requiert le patch intégré ; le visualiseur autonome présente uniquement un cube simulé. Aucun accès aux objets natifs d’Odyssey ni à leur physique. Compilation et essais casque à confirmer. [Documentation technique](https://github.com/philippe015/ed-up-vr-controllers/blob/feature/onfoot-vr-enhanced/vr-controllers/README.md).
+Objet cubique virtuel propre au patch : saisie par contact et grip, déplacement et rotation 6DoF, relâchement. Option Visual/ObjectLab désactivée par défaut, mode exclusif sans commandes clavier/souris du jeu. Requiert le patch intégré ; le visualiseur autonome présente uniquement un cube simulé. Aucun accès aux objets natifs d’Odyssey ni à leur physique. Compilation Windows et tests automatisés réussis (13/13). Essais casque à effectuer. [Documentation technique](https://github.com/philippe015/ed-up-vr-controllers/blob/feature/onfoot-vr-enhanced/vr-controllers/README.md).
+
+### Audit qualité v0.9.15
+
+[Rapport qualité et résultats CI](QUALITY-REVIEW.md). La v0.9.14 a réussi les deux compilations Windows, les 13 tests et le contrôle de l'installateur de diagnostic. Les correctifs v0.9.15 sont en validation. Le ZIP brut du patch intégré n'est pas un installateur complet ; aucun essai casque n'est confirmé.
 
 ## 1. Présentation et possibilités
 
